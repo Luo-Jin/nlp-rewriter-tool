@@ -28,4 +28,4 @@ for key in C:
             T[i,C[key]] = +1
             print("%dth row, %dth col = %d"%(i,C[key],T[i,C[key]]))
 
-torch.save(T,'word_piece_co.pt')
+torch.save(T)

@@ -1,39 +1,42 @@
 import torch
+import torch.utils.data as tud
+import torch.nn as nn
 import numpy as np
 import torchtext.vocab as vocab
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
 
-# get GloVe 400k list as Row
-cache_dir = 'GloVe6B5429'
-glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
-R = glove.itos
-# get BERT 30k Dict as Column
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-v = tokenizer.get_vocab()
-k = tokenizer.get_vocab().keys()
-# choose the word_piece
-C = {}
-for word_piece in k.__iter__():
-    if not word_piece.isidentifier() and word_piece.isascii() and not word_piece.isdigit() and word_piece.isprintable():
-        if "##" in word_piece:
-            C[word_piece[2:]] = v[word_piece]
 
-# create a 400000 x 30522 zeros matrix
-# fill the matrix, 1 as the word_piece is in word, 0 not
-T = torch.zeros(len(R),len(v))
-for key in C:
-    for i in range(len(R)):
-        if key in R[i]:
-            T[i,C[key]] = +1
+Tw = torch.randint(high=2,low=0,size=[30,10],dtype=torch.long)
+Ew  = torch.zeros([10,5],dtype=torch.long)
+E  = torch.rand([30,5])
 
-path = "word-word-piece.pt"
-np.savetxt(path,T.numpy(),delimiter=',')
+class WordEmbeddingDataset(tud.Dataset):
+    def __init__(self,word_embedding,co_occurrence):
+        super().__init__()
+        self.word_embedding = word_embedding
+        self.co_occurrence = co_occurrence
+    def __len__(self):
+        return len(self.word_embedding)
+
+    def __getitem__(self, idx):
+        return self.word_embedding[idx],self.co_occurrence[idx]
+
+dt =  WordEmbeddingDataset(E,Tw)
+BATCH_SIZE = 1
+dataloader = tud.DataLoader(dt, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
 
 
+class EmbeddingModel(nn.Module):
+    def __init__(self, vocab_size, embed_size):
+        super().__init__()
+        self.vocab_size = vocab_size  # 10
+        self.embed_size = embed_size  # 5
+        # [10, 5] matrix
+        self.in_embed = torch.rand(size=[self.vocab_size, self.embed_size])
 
 
+    def forward(self, word_embedding, co_occurrence):
+        log1 = torch.bmm(co_occurrence,self.in_embed)
 
-#print(T)
-#print(T)
-#print(i)
+
