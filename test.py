@@ -16,3 +16,8 @@ from transformers import BertForMaskedLM
 
 #print(glove.itos)
 #print(glove.vectors.shape)
+
+a = torch.tensor([[1,2],[3,4]])
+b = torch.tensor([1,1])
+print (a+b)
+
