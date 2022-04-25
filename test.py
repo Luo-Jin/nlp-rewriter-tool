@@ -17,7 +17,14 @@ from transformers import BertForMaskedLM
 #print(glove.itos)
 #print(glove.vectors.shape)
 
-a = torch.tensor([[1,2],[3,4]])
-b = torch.tensor([1,1])
-print (a+b)
+a = torch.tensor([1.,2.,3.,4.])
+b = torch.tensor([2.,2.,2.,2.])
+s = torch.cosine_similarity(b,a,dim=0)
+print (s)
+
+input=  torch.ones([2,2])
+output =  input[:2] * torch.tensor([2,3])
+print(output)
+
+
 
