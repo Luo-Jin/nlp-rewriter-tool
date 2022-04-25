@@ -13,6 +13,7 @@ tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 model = BertForMaskedLM.from_pretrained('bert-base-uncased')
 mapping = tokenizer(text, return_tensors="pt")
 org_tokens = mapping["input_ids"][0]
+#org_tokens = org_tokens[torch.arange(org_tokens.size) != org_tokens["SEP"]]
 print(org_tokens)
 cache_dir = 'GloVe6B5429'
 glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
