@@ -1,30 +1,32 @@
-import torch
-import torch.utils.data as tud
-import torch.nn as nn
-from matplotlib import pyplot as plt
-import numpy as np
-import torchtext.vocab as vocab
-from transformers import BertTokenizer
-from transformers import BertForMaskedLM
+import sys
+import getopt
 
+def myfunc(argv):
+    arg_input = ""
+    arg_output = ""
+    arg_user = ""
+    arg_help = "{0} -i <input> -u <user> -o <output>".format(argv[0])
 
-# cache_dir = 'GloVe6B5429'
-# #Ew  = torch.zeros([word_piece_size,embed_size],dtype=torch.long)
-# glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
-# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-# print(tokenizer.vocab.pop('fire'))
+    try:
+        opts, args = getopt.getopt(argv[1:], "i:u:o:", ["help", "input=","user=", "output="])
+    except:
+        print(arg_help)
+        sys.exit(2)
 
-#print(glove.itos)
-#print(glove.vectors.shape)
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            print(arg_help)  # print the help message
+            sys.exit(2)
+        elif opt in ("-i", "--input"):
+            arg_input = arg
+        elif opt in ("-u", "--user"):
+            arg_user = arg
+        elif opt in ("-o", "--output"):
+            arg_output = arg
 
-a = torch.tensor([1.,2.,3.,4.])
-b = torch.tensor([2.,2.,2.,2.])
-s = torch.cosine_similarity(b,a,dim=0)
-print (s)
+    print('input:', arg_input)
+    print('user:', arg_user)
+    print('output:', arg_output)
 
-input=  torch.ones([2,2])
-output =  input[:2] * torch.tensor([2,3])
-print(output)
-
-
-
+if __name__ == "__main__":
+    myfunc(sys.argv)

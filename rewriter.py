@@ -1,65 +1,104 @@
+from transformers import BertTokenizer
+from transformers import BertForMaskedLM
+import torchtext.vocab as vocab
+import sys
+import getopt
 import random
 import torch
 import copy
-from transformers import BertTokenizer
-from transformers import BertForMaskedLM
-from torch.nn import functional as F
-import torchtext.vocab as vocab
-import sys
+
+def main():
+    arg_sim = None
+    arg_enf = None
+    arg_txt = None
+    arg_help = "{0} -t <text> -s <similarity> -e <enforcement>".format(sys.argv[0])
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "t:s:e:", ["help", "text=","similar=", "enforce="])
+    except:
+        print(arg_help)
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            print(arg_help)  # print the help message
+            sys.exit(2)
+        elif opt in ("-t", "--text"):
+            arg_txt = arg
+        elif opt in ("-s", "--similar"):
+            arg_sim = arg
+        elif opt in ("-e", "--enforce"):
+            arg_enf = arg
+    σ = 0.975 if arg_sim is None else float(arg_sim)
+    k = 0.1 if arg_enf is None else float(arg_enf)
+    txt = readtxt(arg_txt)
+    rewriter(txt,σ,k)
 
 
-text = 'A novel is a relatively long work of narrative fiction, typically written in prose and published as a book. The present English word for a long work of prose fiction derives from the Italian: novella for "new", "news", or "short story of something new", itself from the Latin: novella, a singular noun use of the neuter plural of novellus, diminutive of novus, meaning "new". Some novelists, including Nathaniel Hawthorne, Herman Melville, Ann Radcliffe, John Cowper Powys, preferred the term "romance" to describe their novels.'
-# all the punctuations will not be replaced
-punctuations = ["[CLS]","[UNK]","[MASK]","[SEP]","[PAD]","'",'"',";",":",",",".","?","/",">","<","{","}"]
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-model = BertForMaskedLM.from_pretrained('bert-base-uncased')
-mapping = tokenizer(text, return_tensors="pt")
-org_tokens = mapping["input_ids"][0]
-cache_dir = 'GloVe6B5429'
-glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
-word_piece_embeddings = torch.load('word-piece-embedding.txt').t()
+def readtxt(txt):
+    f = open(txt, mode='r')
+    txt = f.readline()
+    return txt
 
 
+def rewriter(text,σ=0.975,k=0.1):
+    # all the punctuations will not be replaced
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+    model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+    org_tokens = tokenizer(text, return_tensors="pt")
+    punctuations = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0, "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,
+                    ".": 0, "?": 0, "/": 0, ">": 0, "<": 0, "{": 0, "}": 0}
+    punctuations = {k:tokenizer.convert_tokens_to_ids(k) for k,v in punctuations.items()}
+    cache_dir = 'GloVe6B5429'
+    #glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
+    word_piece_embeddings = torch.load('word-piece-embedding.txt').t()
+
+    # track all replaceable word's position
+    mask_pos = []
+    for i in range(org_tokens["input_ids"][0].size(0)):
+        if org_tokens["input_ids"][0][i] not in punctuations.values():
+            mask_pos.append(i)
+    # iteratively replace the mask words
+    i = 1
+    tokens = copy.deepcopy(org_tokens)
+    while len(mask_pos) > 0 and i <= 5:#<= len(tokens["input_ids"][0]):
+        i = i+1
+        # [pick a random word in k position and mask it
+        pos = random.sample(mask_pos,1)
+        mask_pos.remove(pos[0])
+        # calculate the P(enforce).
+        c = word_piece_embeddings[tokens["input_ids"][0]]
+        Rx = torch.ones([word_piece_embeddings.size(0),word_piece_embeddings.size(1)])
+        Rx = Rx * torch.sum(c,dim=0)
+        c = c[torch.arange(c.size(0)) != pos[0]]
+        c = torch.sum(c, dim=0)
+        Ru = word_piece_embeddings + c
+        s = torch.cosine_similarity(Ru,Rx,dim=1)
+        Penforce = torch.exp(-k*torch.max(torch.zeros(s.size(0)),(σ-s)))
+
+        # calculate the P(lm), it is a token_size * vocal_size matrix
+        replaced_word_idx = copy.deepcopy(tokens["input_ids"][0][pos[0]])
+        tokens["input_ids"][0][pos[0]] = tokenizer.mask_token_id
+        logits = model(**tokens)
+        logits = logits.logits
+        softmax = torch.softmax(logits, dim=-1)
+        Plm = softmax[0][pos[0]]
+
+        # calculate Pproposal
+        Pproposal = Plm + Penforce
+        plm_word_idx = torch.argmax(Plm)
+        ppl_word_idx = torch.argmax(Pproposal)
+        print ("origin:{},plm:{},ppl:{}".format(tokenizer.decode(replaced_word_idx)
+                                                ,tokenizer.decode(plm_word_idx)
+                                                ,tokenizer.decode(ppl_word_idx)))
+        #tokens["input_ids"][0][pos[0]] = sub_word_idx
+        #all_word_idx = torch.argmax(softmax[0],dim=-1)
 
 
-# track all replacable word's position
-mask_pos = []
-for i in range(len(org_tokens)):
-    if tokenizer.convert_ids_to_tokens(org_tokens[i].item()) not in punctuations:
-        mask_pos.append(i)
+    #print(text)
+    #print(tokenizer.decode(all_word_idx,skip_special_tokens=True))
 
-# iteratively replace the mask words
-i = 1
-tokens = copy.deepcopy(org_tokens)
-while len(mask_pos) > 0 and i <= len(tokens):
-    i = i+1
-    #pick a random word in k position and mask it
-    pos = random.sample(mask_pos,1)
-    mask_pos.remove(pos[0])
-    #calculate the P(enforce).
-    c = word_piece_embeddings[tokens]
-    Rx = torch.ones([word_piece_embeddings.size(0),word_piece_embeddings.size(1)])
-    Rx = Rx * torch.sum(c,dim=0)
-    c = c[torch.arange(c.size(0)) != pos[0]]
-    c = torch.sum(c, dim=0)
-    Ru = word_piece_embeddings + c
-    s = torch.cosine_similarity(Ru,Rx,dim=1)
-    σ = 0.975
-    k = 0.1
-    Penforce = -k*torch.max(torch.zeros(s.size(0)),(σ-s))
-    #calculate the P(lm), it is a token_size * vocal_size matrix
-    tokens[pos[0]] = tokenizer.mask_token_id
-    mapping["input_ids"][0]=copy.deepcopy(tokens)
-    logits = model(**mapping)
-    logits = logits.logits
-    softmax = torch.softmax(logits, dim=-1)
-    Plm = softmax[0][pos[0]]
-    # calculate Pproposal
-    Pproposal = Plm + Penforce
-    all_word_idx = torch.argmax(softmax[0],dim=-1)
-    mask_word_idx = torch.argmax(Pproposal)
-    print ("'%s' was replaced by '%s'"%(tokenizer.decode(tokens[pos[0]]),tokenizer.decode(mask_word_idx)))
-    tokens[pos[0]] = mask_word_idx
 
-print(text)
-print(tokenizer.decode(all_word_idx))
+if __name__ == "__main__":
+    sys.exit(main())
+
