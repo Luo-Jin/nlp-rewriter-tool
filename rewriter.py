@@ -1,11 +1,21 @@
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
+import stanza
 import torchtext.vocab as vocab
 import sys
 import getopt
 import random
 import torch
 import copy
+
+# cache_dir = 'GloVe6B5429'
+# glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
+# download bert embeddings
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+# define bert model
+model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+# download English model
+# stanza.download('en')
 
 def main():
     arg_sim = None
@@ -32,6 +42,7 @@ def main():
     σ = 0.975 if arg_sim is None else float(arg_sim)
     k = 0.1 if arg_enf is None else float(arg_enf)
     txt = readtxt(arg_txt)
+
     rewriter(txt,σ,k)
 
 
@@ -42,15 +53,13 @@ def readtxt(txt):
 
 
 def rewriter(text,σ=0.975,k=0.1):
-    # all the punctuations will not be replaced
-    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-    model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+    org_tokens = tokenizer.tokenize(text)
+
     org_tokens = tokenizer(text, return_tensors="pt")
     punctuations = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0, "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,
                     ".": 0, "?": 0, "/": 0, ">": 0, "<": 0, "{": 0, "}": 0}
     punctuations = {k:tokenizer.convert_tokens_to_ids(k) for k,v in punctuations.items()}
-    cache_dir = 'GloVe6B5429'
-    #glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
+
     word_piece_embeddings = torch.load('word-piece-embedding.txt').t()
 
     # track all replaceable word's position
@@ -61,7 +70,7 @@ def rewriter(text,σ=0.975,k=0.1):
     # iteratively replace the mask words
     i = 1
     tokens = copy.deepcopy(org_tokens)
-    while len(mask_pos) > 0 and i <= 5:#<= len(tokens["input_ids"][0]):
+    while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0]):
         i = i+1
         # [pick a random word in k position and mask it
         pos = random.sample(mask_pos,1)
@@ -74,7 +83,8 @@ def rewriter(text,σ=0.975,k=0.1):
         c = torch.sum(c, dim=0)
         Ru = word_piece_embeddings + c
         s = torch.cosine_similarity(Ru,Rx,dim=1)
-        Penforce = torch.exp(-k*torch.max(torch.zeros(s.size(0)),(σ-s)))
+
+        Penforce = torch.exp(-k*torch.max(torch.zeros(s.size(0)),(float(σ)-s)))
 
         # calculate the P(lm), it is a token_size * vocal_size matrix
         replaced_word_idx = copy.deepcopy(tokens["input_ids"][0][pos[0]])
@@ -86,17 +96,23 @@ def rewriter(text,σ=0.975,k=0.1):
 
         # calculate Pproposal
         Pproposal = Plm + Penforce
+        # print("{},{}".format(sum(s),s.shape))
+        # print("max of s:{}, min of s:{}".format(s.max(),s.min()))
+        # print("σ :%s"%σ)
+        print("tokens:{},Plm:{},Pen:{},Pro:{}".format(replaced_word_idx
+                                                      ,torch.argmax(Plm)
+                                                      ,torch.argmax(Penforce)
+                                                      ,torch.argmax(Pproposal)))
         plm_word_idx = torch.argmax(Plm)
         ppl_word_idx = torch.argmax(Pproposal)
-        print ("origin:{},plm:{},ppl:{}".format(tokenizer.decode(replaced_word_idx)
-                                                ,tokenizer.decode(plm_word_idx)
-                                                ,tokenizer.decode(ppl_word_idx)))
-        #tokens["input_ids"][0][pos[0]] = sub_word_idx
-        #all_word_idx = torch.argmax(softmax[0],dim=-1)
+        # print ("origin:{},plm:{},ppl:{}".format(tokenizer.decode(replaced_word_idx)
+        #                                         ,tokenizer.decode(plm_word_idx)
+        #                                         ,tokenizer.decode(ppl_word_idx)))
+        tokens["input_ids"][0][pos[0]] = ppl_word_idx
 
 
-    #print(text)
-    #print(tokenizer.decode(all_word_idx,skip_special_tokens=True))
+    # print(text)
+    # print(tokenizer.decode(tokens["input_ids"][0],skip_special_tokens=True))
 
 
 if __name__ == "__main__":

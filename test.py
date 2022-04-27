@@ -1,32 +1,32 @@
+from transformers import BertTokenizer
+from transformers import BertForMaskedLM
+import stanza
+import torchtext.vocab as vocab
 import sys
 import getopt
+import random
+import torch
+import copy
 
-def myfunc(argv):
-    arg_input = ""
-    arg_output = ""
-    arg_user = ""
-    arg_help = "{0} -i <input> -u <user> -o <output>".format(argv[0])
+text = ["fireman working for ul for ten years."]
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+print(tokenizer.tokenize(text[0]))
+tokens = tokenizer(text,add_special_tokens=True,return_tensors="pt")
+tokens["input_ids"][:,5] = tokenizer.mask_token_id
+print(tokens["input_ids"][0])
+model.eval()
+with torch.no_grad():
+    predictions = model(**tokens)
 
-    try:
-        opts, args = getopt.getopt(argv[1:], "i:u:o:", ["help", "input=","user=", "output="])
-    except:
-        print(arg_help)
-        sys.exit(2)
+predicted_id = torch.argmax(predictions.logits,dim=-1)
+#print(tokenizer.convert_ids_to_tokens(t) for t in predicted_id[:])
+for t in predicted_id[:]:
+    print(t)
+    print(tokenizer.decode(t.numpy(),skip_special_tokens=True))
 
-    for opt, arg in opts:
-        if opt in ("-h", "--help"):
-            print(arg_help)  # print the help message
-            sys.exit(2)
-        elif opt in ("-i", "--input"):
-            arg_input = arg
-        elif opt in ("-u", "--user"):
-            arg_user = arg
-        elif opt in ("-o", "--output"):
-            arg_output = arg
 
-    print('input:', arg_input)
-    print('user:', arg_user)
-    print('output:', arg_output)
 
-if __name__ == "__main__":
-    myfunc(sys.argv)
+
+
+
