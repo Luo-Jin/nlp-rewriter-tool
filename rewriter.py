@@ -11,9 +11,9 @@ import copy
 # cache_dir = 'GloVe6B5429'
 # glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
 # download bert embeddings
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
-# define bert model
-model = BertForMaskedLM.from_pretrained('bert-base-uncased')
+tokenizer = BertTokenizer.from_pretrained('./Bert/vocabulary')
+model = BertForMaskedLM.from_pretrained("./Bert/model/maskedLM")
+word_piece_embeddings = torch.load('word-piece-embedding.txt').t()
 # download English model
 # stanza.download('en')
 
@@ -52,16 +52,12 @@ def readtxt(txt):
     return txt
 
 
-def rewriter(text,σ=0.975,k=0.1):
-    org_tokens = tokenizer.tokenize(text)
-
+def rewriter(txt,σ=0.975,k=0.1,batch=3):
+    text = [txt] * batch
     org_tokens = tokenizer(text, return_tensors="pt")
     punctuations = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0, "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,
                     ".": 0, "?": 0, "/": 0, ">": 0, "<": 0, "{": 0, "}": 0}
     punctuations = {k:tokenizer.convert_tokens_to_ids(k) for k,v in punctuations.items()}
-
-    word_piece_embeddings = torch.load('word-piece-embedding.txt').t()
-
     # track all replaceable word's position
     mask_pos = []
     for i in range(org_tokens["input_ids"][0].size(0)):
@@ -76,9 +72,10 @@ def rewriter(text,σ=0.975,k=0.1):
         pos = random.sample(mask_pos,1)
         mask_pos.remove(pos[0])
         # calculate the P(enforce).
-        c = word_piece_embeddings[tokens["input_ids"][0]]
-        Rx = torch.ones([word_piece_embeddings.size(0),word_piece_embeddings.size(1)])
-        Rx = Rx * torch.sum(c,dim=0)
+        c = word_piece_embeddings[tokens["input_ids"]]
+        x = word_piece_embeddings[org_tokens["input_ids"]]
+        Rx = torch.ones(batch,word_piece_embeddings.size(0),word_piece_embeddings.size(1))
+        Rx = Rx * torch.sum(x,dim=1)
         c = c[torch.arange(c.size(0)) != pos[0]]
         c = torch.sum(c, dim=0)
         Ru = word_piece_embeddings + c
