@@ -17,6 +17,7 @@ word_piece_embeddings = torch.load('word-piece-embedding.txt').t()
 # download English model
 # stanza.download('en')
 
+
 def main():
     arg_sim = None
     arg_enf = None
@@ -41,9 +42,9 @@ def main():
             arg_enf = arg
     σ = 0.975 if arg_sim is None else float(arg_sim)
     k = 0.1 if arg_enf is None else float(arg_enf)
-    txt = readtxt(arg_txt)
+    text = readtxt(arg_txt)
 
-    rewriter(txt,σ,k)
+    rewriter(text,σ,k)
 
 
 def readtxt(txt):
@@ -51,6 +52,39 @@ def readtxt(txt):
     txt = f.readline()
     return txt
 
+
+def penforce(batch,pos,org_tokens,tokens,k,σ):
+    # calculate the Rx for original sentence 3 x 30k x 300
+    Rx = word_piece_embeddings[org_tokens["input_ids"][0]]
+    Rx = torch.sum(Rx, dim=0)
+    Rx = Rx.expand(batch, word_piece_embeddings.size(0)
+                   , word_piece_embeddings.size(1))
+    # calculate the Ru for changed sentence in 3 x 30k x 300
+    Ru = word_piece_embeddings[tokens["input_ids"]]
+    # remove masked word from Ru
+    Ru = torch.cat([t[torch.arange(t.size(0)) != pos[0]] for t in Ru[:]])
+    Ru = Ru.view(batch, int(Ru.size(0) / batch), word_piece_embeddings.size(1))
+    # sum rest words prob
+    Ru = torch.sum(Ru, dim=1)
+    Ru = torch.cat([t.expand(word_piece_embeddings.size(0)
+                             , word_piece_embeddings.size(1)) for t in Ru[:]])
+    # add all other possible words prob
+    Ru = Ru.view(batch, word_piece_embeddings.size(0)
+                 , word_piece_embeddings.size(1))
+    Ru = Ru + word_piece_embeddings
+    # compute similarities between original sentence with all possible sentences (30k)
+    s = torch.cosine_similarity(Ru, Rx, dim=2)
+    Penforce = torch.exp(-k * torch.max(torch.zeros(batch, word_piece_embeddings.size(0)), (float(σ) - s)))
+    return Penforce
+
+def plm(pos,tokens):
+    # replace choosen word with [MASK]
+    tokens["input_ids"][:, pos[0]] = tokenizer.mask_token_id
+    logits = model(**tokens)
+    logits = logits.logits
+    softmax = torch.softmax(logits, dim=-1)
+    Plm = softmax[:, pos[0]]
+    return Plm
 
 def rewriter(txt,σ=0.975,k=0.1,batch=3):
     text = [txt] * batch
@@ -66,50 +100,38 @@ def rewriter(txt,σ=0.975,k=0.1,batch=3):
     # iteratively replace the mask words
     i = 1
     tokens = copy.deepcopy(org_tokens)
-    while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0]):
+    while len(mask_pos) > 0 and i <= 3:#len(tokens["input_ids"][0]):
         i = i+1
-        # [pick a random word in k position and mask it
+        # pick a random word in k position and mask it
         pos = random.sample(mask_pos,1)
         mask_pos.remove(pos[0])
-        # calculate the P(enforce).
-        c = word_piece_embeddings[tokens["input_ids"]]
-        x = word_piece_embeddings[org_tokens["input_ids"]]
-        Rx = torch.ones(batch,word_piece_embeddings.size(0),word_piece_embeddings.size(1))
-        Rx = Rx * torch.sum(x,dim=1)
-        c = c[torch.arange(c.size(0)) != pos[0]]
-        c = torch.sum(c, dim=0)
-        Ru = word_piece_embeddings + c
-        s = torch.cosine_similarity(Ru,Rx,dim=1)
-
-        Penforce = torch.exp(-k*torch.max(torch.zeros(s.size(0)),(float(σ)-s)))
+        # calculate the prob of enforcement
+        Penforce = penforce(batch,pos,org_tokens,tokens,k,σ)
 
         # calculate the P(lm), it is a token_size * vocal_size matrix
-        replaced_word_idx = copy.deepcopy(tokens["input_ids"][0][pos[0]])
-        tokens["input_ids"][0][pos[0]] = tokenizer.mask_token_id
-        logits = model(**tokens)
-        logits = logits.logits
-        softmax = torch.softmax(logits, dim=-1)
-        Plm = softmax[0][pos[0]]
+        replaced_word_idx = copy.deepcopy(tokens["input_ids"][:,pos[0]])
+        Plm = plm(pos,tokens)
 
-        # calculate Pproposal
+        # calculate the proposal prob
         Pproposal = Plm + Penforce
-        # print("{},{}".format(sum(s),s.shape))
-        # print("max of s:{}, min of s:{}".format(s.max(),s.min()))
-        # print("σ :%s"%σ)
-        print("tokens:{},Plm:{},Pen:{},Pro:{}".format(replaced_word_idx
-                                                      ,torch.argmax(Plm)
-                                                      ,torch.argmax(Penforce)
-                                                      ,torch.argmax(Pproposal)))
-        plm_word_idx = torch.argmax(Plm)
-        ppl_word_idx = torch.argmax(Pproposal)
-        # print ("origin:{},plm:{},ppl:{}".format(tokenizer.decode(replaced_word_idx)
-        #                                         ,tokenizer.decode(plm_word_idx)
-        #                                         ,tokenizer.decode(ppl_word_idx)))
-        tokens["input_ids"][0][pos[0]] = ppl_word_idx
+        ppl_word_idx = torch.topk(Pproposal,k=batch,dim=-1)
+        y = torch.diag_embed(torch.ones(batch,dtype=torch.long))
+        sample_idx = torch.sum(ppl_word_idx.indices * y,dim=-1)
+        # print ("origin:{},ppl:{}".format(tokenizer.decode(replaced_word_idx)
+        #                                         ,tokenizer.decode(sample_idx)))
+        # replace the MASK with proposed words
+        tokens["input_ids"][:,pos[0]] = sample_idx
 
 
-    # print(text)
-    # print(tokenizer.decode(tokens["input_ids"][0],skip_special_tokens=True))
+    print("The original sentence is :\n{}".format(txt))
+    print("The alternative sentences are :")
+    for i in torch.arange(len(tokens["input_ids"])):
+        print("{}{}{}"
+               .format(i+1
+                       ,"."
+                       ,tokenizer.decode(tokens["input_ids"][i],skip_special_tokens=True)))
+
+    #print(tokenizer.decode(tokens["input_ids"],skip_special_tokens=True))
 
 
 if __name__ == "__main__":

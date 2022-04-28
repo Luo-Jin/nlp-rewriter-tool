@@ -19,9 +19,9 @@ tokens = tokenizer(text,add_special_tokens=True,return_tensors="pt")
 
 c = word_piece_embeddings[tokens["input_ids"]]
 c = torch.sum(c,dim=1)
-print("c shape:{}".format(c.shape))
+#print("c shape:{}".format(c.shape))
 Rx = torch.ones(3,word_piece_embeddings.size(0),word_piece_embeddings.size(1))
-print("Rx shape:{}".format(Rx.shape))
+#print("Rx shape:{}".format(Rx.shape))
 
 
 tokens["input_ids"][:,1] = tokenizer.mask_token_id
@@ -37,6 +37,16 @@ predicted_id[:,1] = sample_idx
 # print(txt)
 # print([tokenizer.decode(s[1:len(s)-1]) for s in predicted_id])
 # #print(tokenizer.decode(s[1:len(s)-1]))
+
+def caly():
+    x = torch.zeros(2,3,4)
+    y = torch.ones(3,4)
+    z = x + y
+    return x
+
+caly= caly()
+print(caly)
+
 
 
 
