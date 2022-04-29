@@ -1,12 +1,12 @@
 import torch
 import torch.utils.data as tud
 import torch.nn as nn
-
 from matplotlib import pyplot as plt
 import numpy as np
 import torchtext.vocab as vocab
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
+
 
 class WordEmbeddingDataset(tud.Dataset):
     def __init__(self,word_embedding,co_occurrence):
@@ -60,7 +60,7 @@ loss_his = []
 
 
 # training
-EPOCH = 10
+EPOCH = 100
 for epoch in range(EPOCH):
     print('Epoch: ', epoch)
     for step,(y,x) in enumerate(dataloader):
@@ -70,17 +70,10 @@ for epoch in range(EPOCH):
         loss.backward()
         opt_sgd.step()
         loss_his.append(loss.data.numpy())
+    if  np.mod(epoch,10) == 0:
         print('epoch:{},loss:{}'.format(epoch, loss))
     #print(net_sgd.weight)
 print(net_sgd.weight.shape)
-# print(len(loss_his))
-# for i in loss_his:
-#     plt.plot(i,lable='SGD')
-#     plt.legend(loc='best')
-#     plt.xlabel('Steps')
-#     plt.ylabel('Loss')
-#     plt.show()
-
 
 
 

@@ -1,5 +1,7 @@
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
+from os import system, name
+from time import sleep
 import stanza
 import torchtext.vocab as vocab
 import sys
@@ -7,6 +9,7 @@ import getopt
 import random
 import torch
 import copy
+import re
 
 # cache_dir = 'GloVe6B5429'
 # glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
@@ -42,15 +45,34 @@ def main():
             arg_enf = arg
     σ = 0.975 if arg_sim is None else float(arg_sim)
     k = 0.1 if arg_enf is None else float(arg_enf)
+    # read text from specific txt file
     text = readtxt(arg_txt)
-
-    rewriter(text,σ,k)
+    screen_clear()
+    print("\033[1;33mThe original sentence is :\033[0m")
+    print("\033[7m\n{}\n\033[0m".format(text))
+    tokens = rewriter(text, σ, k)
+    print("\033[1;33mThe alternative sentences are :\033[0m")
+    for i in torch.arange(len(tokens["input_ids"])):
+        print("{}{}{}"
+              .format(i + 1
+                      , "."
+                      , tokenizer.decode(tokens["input_ids"][i], skip_special_tokens=True)))
 
 
 def readtxt(txt):
     f = open(txt, mode='r')
-    txt = f.readline()
-    return txt
+    text = f.readline()
+    f.close()
+    return text
+
+# define our clear function
+def screen_clear():
+    if name == 'nt':
+        _ = system('cls')
+        # for mac and linux(here, os.name is 'posix')
+    else:
+        _ = system('clear')
+        # print out some text
 
 
 def penforce(batch,pos,org_tokens,tokens,k,σ):
@@ -100,7 +122,7 @@ def rewriter(txt,σ=0.975,k=0.1,batch=3):
     # iteratively replace the mask words
     i = 1
     tokens = copy.deepcopy(org_tokens)
-    while len(mask_pos) > 0 and i <= 3:#len(tokens["input_ids"][0]):
+    while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0]):
         i = i+1
         # pick a random word in k position and mask it
         pos = random.sample(mask_pos,1)
@@ -121,18 +143,7 @@ def rewriter(txt,σ=0.975,k=0.1,batch=3):
         #                                         ,tokenizer.decode(sample_idx)))
         # replace the MASK with proposed words
         tokens["input_ids"][:,pos[0]] = sample_idx
-
-
-    print("The original sentence is :\n{}".format(txt))
-    print("The alternative sentences are :")
-    for i in torch.arange(len(tokens["input_ids"])):
-        print("{}{}{}"
-               .format(i+1
-                       ,"."
-                       ,tokenizer.decode(tokens["input_ids"][i],skip_special_tokens=True)))
-
-    #print(tokenizer.decode(tokens["input_ids"],skip_special_tokens=True))
-
+        return tokens
 
 if __name__ == "__main__":
     sys.exit(main())
