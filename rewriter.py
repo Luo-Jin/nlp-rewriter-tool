@@ -1,15 +1,36 @@
+###############################################
+#   File    : rewriter.py
+#   Author  : Jin luo
+#   Date    : 2022-04-23
+#   Input   : rewriter.py -t <text> -s <similarity> -e <enforcement>
+#             s=0.972 and e=0.01 if not specified
+#   Output  : three revised copies of the original sentences
+###############################################
+'''
+Description:
+this script makes three copies of original sentence.
+Loop in each replaceable positions
+  1. mask a random position in those copies.
+  2. calculates:
+     a.the word prob Plm by using BERT MASK Language Model, get tensor[3,30k]
+     b.the enforcement prob Penforce by using pre-trained "word-piece-embeddings", get tensor[3,30k]
+     c.the proposed prob for word Pproposal = element-wise add Plm and Penforce, get tensor[3,30k]
+  3. sample words with top 3 probs in Pproposal, (we could just use the top1)
+     and fill the rank 1 word id in masked position in the first copy
+         fill the rank 2 word id  in masked position in the second copy
+         fill the rank 3 word id  in masked position in the third copy
+  4. decode the three copies
+End loop
+'''
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
 from os import system, name
-from time import sleep
-import stanza
-import torchtext.vocab as vocab
 import sys
 import getopt
 import random
 import torch
 import copy
-import re
+
 
 # cache_dir = 'GloVe6B5429'
 # glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
