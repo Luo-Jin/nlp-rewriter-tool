@@ -1,3 +1,22 @@
+###############################################
+#   File    : train.py
+#   Author  : Jin luo
+#   Date    : 2022-04-23
+#   Input   : word_piece_co.pt
+#   Output  : word_piece_embedding.pt
+###############################################
+'''
+Description:
+
+this script train a word-piece embeddingv 'E′' based on the GloVe embeddings 'E(w) '
+and a word-piece indicator matrix 'T (w)' that represents relationship
+between the BERT 30k vocabs and GloVe 400k vocabs.
+
+it simply use a shallow NN with just one Linear layer to minimize the
+L1 loss of |E(w) − T (w)E′|. not sure if need a activation function or not ?
+the SGD optimizer was used to train this model with batch size 5000 and learning rate 0.01.
+
+'''
 import torch
 import torch.utils.data as tud
 import torch.nn as nn
@@ -35,16 +54,10 @@ class EmbeddingModel(nn.Module):
 
 
 # prepare the input
-#word_size = 400000
-#word_piece_size = 30000
-#embed_size = 300
 BATCH_SIZE = 5000
 cache_dir = 'GloVe6B5429'
-#Tw = torch.randint(high=2,low=0,size=[word_size,word_piece_size],dtype=torch.float )
 Tw = torch.load('word_piece_co.pt')
-#Tw = torch.randint(size=[50,2],low=0,high=2,dtype=torch.float)
 E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors
-#E  = torch.rand([50,2],dtype=torch.float)
 
 # prepare dataloader
 dt = WordEmbeddingDataset(E,Tw)
@@ -72,7 +85,7 @@ for epoch in range(EPOCH):
         loss_his.append(loss.data.numpy())
     if  np.mod(epoch,10) == 0:
         print('epoch:{},loss:{}'.format(epoch, loss))
-    #print(net_sgd.weight)
+
 torch.save(net_sgd.weight,'./word_piece_embedding.pt')
 
 
