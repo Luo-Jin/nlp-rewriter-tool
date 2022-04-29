@@ -54,7 +54,7 @@ class EmbeddingModel(nn.Module):
 
 
 # prepare the input
-BATCH_SIZE = 5000
+BATCH_SIZE = 500
 cache_dir = 'GloVe6B5429'
 Tw = torch.load('word_piece_co.pt')
 E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors
@@ -73,9 +73,9 @@ loss_his = []
 
 
 # training
-EPOCH = 100
+EPOCH = 1000
 for epoch in range(EPOCH):
-    print('Epoch: ', epoch)
+    #print('Epoch: ', epoch)
     for step,(y,x) in enumerate(dataloader):
         output = net_sgd(x)
         loss = loss_func(output,y)
@@ -83,10 +83,11 @@ for epoch in range(EPOCH):
         loss.backward()
         opt_sgd.step()
         loss_his.append(loss.data.numpy())
-    if  np.mod(epoch,10) == 0:
+    if  np.mod(epoch,50) == 0:
         print('epoch:{},loss:{}'.format(epoch, loss))
 
-torch.save(net_sgd.weight,'./word_piece_embedding.pt')
+torch.save(loss_his,'loss.pt')
+torch.save(net_sgd.weight,'word_piece_embedding_1000e_500b.pt')
 
 
 

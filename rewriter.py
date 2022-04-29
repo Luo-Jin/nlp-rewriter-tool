@@ -72,7 +72,8 @@ def main():
     print("\033[1;33mThe original sentence is :\033[0m")
     print("\033[7m\n{}\n\033[0m".format(text))
     tokens = rewriter(text, σ, k)
-    print("\033[1;33mThe alternative sentences are :\033[0m")
+    print("\033[1;33mThe sentence is revised with smooth parameter k={} "
+          "and similarity rate σ={} :\033[0m".format(k,σ))
     for i in torch.arange(len(tokens["input_ids"])):
         print("{}{}{}"
               .format(i + 1
@@ -143,7 +144,7 @@ def rewriter(txt,σ=0.975,k=0.1,batch=3):
     # iteratively replace the mask words
     i = 1
     tokens = copy.deepcopy(org_tokens)
-    while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0]):
+    while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0])/3:
         i = i+1
         # pick a random word in k position and mask it
         pos = random.sample(mask_pos,1)
@@ -160,11 +161,14 @@ def rewriter(txt,σ=0.975,k=0.1,batch=3):
         ppl_word_idx = torch.topk(Pproposal,k=batch,dim=-1)
         y = torch.diag_embed(torch.ones(batch,dtype=torch.long))
         sample_idx = torch.sum(ppl_word_idx.indices * y,dim=-1)
+        index = [i for i in range(len(sample_idx))]
+        random.shuffle(index)
+
         # print ("origin:{},ppl:{}".format(tokenizer.decode(replaced_word_idx)
         #                                         ,tokenizer.decode(sample_idx)))
         # replace the MASK with proposed words
         tokens["input_ids"][:,pos[0]] = sample_idx
-        return tokens
+    return tokens
 
 if __name__ == "__main__":
     sys.exit(main())
