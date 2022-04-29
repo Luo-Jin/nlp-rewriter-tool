@@ -41,7 +41,7 @@ class EmbeddingModel(nn.Module):
 BATCH_SIZE = 5000
 cache_dir = 'GloVe6B5429'
 #Tw = torch.randint(high=2,low=0,size=[word_size,word_piece_size],dtype=torch.float )
-Tw = torch.load('word-word-piece.pt')
+Tw = torch.load('word_piece_co:wq.pt')
 #Tw = torch.randint(size=[50,2],low=0,high=2,dtype=torch.float)
 E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors
 #E  = torch.rand([50,2],dtype=torch.float)
