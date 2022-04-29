@@ -73,7 +73,7 @@ for epoch in range(EPOCH):
     if  np.mod(epoch,10) == 0:
         print('epoch:{},loss:{}'.format(epoch, loss))
     #print(net_sgd.weight)
-print(net_sgd.weight.shape)
+torch.save(net_sgd.weight,'./word_piece_embedding.pt')
 
 
 
