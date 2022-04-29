@@ -1,3 +1,23 @@
+'''
+======================================================================================================
+File: co_occurrence_matrix.py
+edit by Jin luo
+Input: no
+Output: word_piece_co.pt
+
+
+Descriptions:
+this script creates 400k x 30k word - piece co-occurrence matrix Tw
+for each word i in 400k vocab in GloVe, if we can find their sub-word piece j in 30k vocab in BERT
+Tw(i,j) = 1, otherwise T(i,j) = 0.
+
+in this program, I did not iterate every word-piece in 30k vocab
+instead, I chosen those word-pieces who is not identifier and is not digit
+which contains only the word-piece with "##" prefix. Does it make sense?
+========================================================================================================
+'''
+
+
 import torch
 import numpy as np
 import torchtext.vocab as vocab
@@ -28,4 +48,4 @@ for key in C:
             T[i,C[key]] = +1
             print("%dth row, %dth col = %d"%(i,C[key],T[i,C[key]]))
 
-torch.save(T)
+torch.save(T,'word_piece_co.pt')
