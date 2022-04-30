@@ -120,7 +120,7 @@ def main():
             arg_batch = arg
         elif opt in ("-l", "--lr"):
             arg_lr = arg
-
+    print(arg_batch)
     train(epoch=arg_epoch,batch=arg_batch,lr=arg_lr)
 
 
