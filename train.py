@@ -21,6 +21,7 @@ import torch
 import torch.utils.data as tud
 import torch.nn as nn
 from matplotlib import pyplot as plt
+import time
 import numpy as np
 import sys
 import getopt
@@ -78,6 +79,7 @@ def train(epoch:int,batch:int,lr:float):
 
     # training
     EPOCH = epoch
+    time1 = time.time()
     for epoch in range(EPOCH):
         # print('Epoch: ', epoch)
         for step,(y,x) in enumerate(dataloader):
@@ -88,9 +90,12 @@ def train(epoch:int,batch:int,lr:float):
             opt_sgd.step()
             loss_his.append(loss.data.numpy())
         if  np.mod(epoch,100) == 0:
+            time2 = time()
+            interval = time2 - time1
+            time1 = time2
             torch.save(loss_his, 'loss.pt')
             torch.save(net_sgd.weight, 'weight.pt')
-            print('epoch:{}, loss:{}'.format(epoch, np.mean(loss_his[epoch*len(dt)/batch:(epoch+1)*batch-1])))
+            print('epoch:{} run {} seconds, loss:{}'.format(epoch, interval,np.mean(loss_his[epoch*len(dt)/batch:(epoch+1)*len(dt)/batch-1])))
 
 
 def main():
