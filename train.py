@@ -90,7 +90,7 @@ def train(epoch:int,batch:int,lr:float):
             opt_sgd.step()
             loss_his.append(loss.data.numpy())
         if  np.mod(epoch,100) == 0:
-            time2 = time()
+            time2 = time.time()
             interval = time2 - time1
             time1 = time2
             torch.save(loss_his, 'loss.pt')
@@ -120,7 +120,7 @@ def main():
             arg_batch = int(arg)
         elif opt in ("-l", "--lr"):
             arg_lr = float(arg)
-    print(arg_batch)
+
     train(epoch=arg_epoch,batch=arg_batch,lr=arg_lr)
 
 
