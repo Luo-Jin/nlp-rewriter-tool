@@ -51,7 +51,7 @@ class EmbeddingModel(nn.Module):
 
     def forward(self, x):
         out = self.linear(x)
-        out = self.sigmod(out)
+        #out = self.sigmod(out)
         return out
 
 def train(epoch:int,batch:int,lr:float):
@@ -69,10 +69,12 @@ def train(epoch:int,batch:int,lr:float):
     # define the hyperprameters
     LR = lr
     # define the nn model and optimizer and loss function
-    net_sgd = EmbeddingModel(Tw.shape[1],E.shape[1])
-    opt_sgd = torch.optim.SGD(net_sgd.parameters())
-    loss_func = torch.nn.L1Loss(reduction='sum')
+    net_sgd = EmbeddingModel(Tw.shape[1], E.shape[1])
+    opt_sgd = torch.optim.SGD(net_sgd.parameters(), lr=LR)
+    # loss_func = torch.nn.L1Loss(reduction='sum')
+    loss_func = torch.nn.SmoothL1Loss(reduction='mean')
     loss_his = []
+    loss_epoch = []
 
     # training
     EPOCH = epoch
@@ -85,10 +87,10 @@ def train(epoch:int,batch:int,lr:float):
             loss.backward()
             opt_sgd.step()
             loss_his.append(loss.data.numpy())
-        if  np.mod(epoch,50) == 0:
-            print('epoch:{}, loss:{}'.format(epoch, np.mean(loss_his)))
-    torch.save(loss_his,'loss.pt')
-    torch.save(net_sgd.weight,'test.pt')
+        if  np.mod(epoch,100) == 0:
+            torch.save(loss_his, 'loss.pt')
+            torch.save(net_sgd.weight, 'weight.pt')
+            print('epoch:{}, loss:{}'.format(epoch, np.mean(loss_his[epoch*len(dt)/batch:(epoch+1)*batch-1])))
 
 
 def main():

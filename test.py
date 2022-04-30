@@ -92,7 +92,7 @@ for epoch in range(EPOCH):
         loss_his.append(loss.data.numpy())
     if np.mod(epoch,100) == 0:
         print('epoch:{}, loss:{}'.format(epoch, loss_his[-1]))
-torch.save(loss_his,'test/loss.pt')
+torch.save(loss_his,'loss.pt')
 torch.save(net_sgd.weight,'test/weight.pt')
 
 loss_t = torch.tensor([torch.from_numpy(a) for a in loss_his])
