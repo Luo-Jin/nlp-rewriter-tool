@@ -75,7 +75,6 @@ def train(epoch:int,batch:int,lr:float):
     # loss_func = torch.nn.L1Loss(reduction='sum')
     loss_func = torch.nn.SmoothL1Loss(reduction='mean')
     loss_his = []
-    loss_epoch = []
 
     # training
     EPOCH = epoch
@@ -95,7 +94,9 @@ def train(epoch:int,batch:int,lr:float):
             time1 = time2
             torch.save(loss_his, 'loss.pt')
             torch.save(net_sgd.weight, 'weight.pt')
-            print('epoch:{} run {} seconds, loss:{}'.format(epoch, interval,np.mean(loss_his[epoch*len(dt)/batch:(epoch+1)*len(dt)/batch-1])))
+            print('epoch:{} run {} seconds, loss:{}'
+                  .format(epoch, interval
+                          ,np.mean(loss_his[int(epoch*len(dt)/batch):int((epoch+1)*len(dt)/batch-1)])))
 
 
 def main():

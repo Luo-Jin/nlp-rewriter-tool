@@ -91,7 +91,7 @@ for epoch in range(EPOCH):
         opt_sgd.step()
         loss_his.append(loss.data.numpy())
     if np.mod(epoch,100) == 0:
-        print('epoch:{}, loss:{}'.format(epoch, loss_his[-1]))
+        print('epoch:{}, loss:{}'.format(epoch, numpy.mean(loss_his[int(epoch*len(dt)/BATCH_SIZE):int((epoch+1)*len(dt)/BATCH_SIZE-1)])))
 torch.save(loss_his,'loss.pt')
 torch.save(net_sgd.weight,'test/weight.pt')
 
