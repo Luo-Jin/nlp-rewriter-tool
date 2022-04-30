@@ -22,9 +22,9 @@ import torch.utils.data as tud
 import torch.nn as nn
 from matplotlib import pyplot as plt
 import numpy as np
+import sys
+import getopt
 import torchtext.vocab as vocab
-from transformers import BertTokenizer
-from transformers import BertForMaskedLM
 
 
 class WordEmbeddingDataset(tud.Dataset):
@@ -44,52 +44,80 @@ class EmbeddingModel(nn.Module):
         self.vocab_size = vocab_size  # 10
         self.embed_size = embed_size  # 5
         self.linear = nn.Linear(vocab_size,embed_size,bias=False)
+        self.sigmod = nn.Sigmoid()
         self.weight = self.linear.weight
     def __getweight__(self):
         return self.weight
 
     def forward(self, x):
         out = self.linear(x)
+        out = self.sigmod(out)
         return out
 
+def train(epoch:int,batch:int,lr:float):
+    # prepare the input
+    BATCH_SIZE = batch
+    cache_dir = 'GloVe6B5429'
+    Tw = torch.load('word_piece_co.pt')
+    #Tw = torch.randint(low=0,high=1,size=[400,300])
+    E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors
+    #E = torch.rand(size=[400,30])
+    # prepare dataloader
+    dt = WordEmbeddingDataset(E,Tw)
+    dataloader = tud.DataLoader(dt, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-# prepare the input
-BATCH_SIZE = 500
-cache_dir = 'GloVe6B5429'
-Tw = torch.load('word_piece_co.pt')
-E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors
+    # define the hyperprameters
+    LR = lr
+    # define the nn model and optimizer and loss function
+    net_sgd = EmbeddingModel(Tw.shape[1],E.shape[1])
+    opt_sgd = torch.optim.SGD(net_sgd.parameters())
+    loss_func = torch.nn.L1Loss(reduction='sum')
+    loss_his = []
 
-# prepare dataloader
-dt = WordEmbeddingDataset(E,Tw)
-dataloader = tud.DataLoader(dt, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-
-# define the hyperprameters
-LR = 0.01
-# define the nn model and optimizer and loss function
-net_sgd = EmbeddingModel(Tw.shape[1],E.shape[1])
-opt_sgd = torch.optim.SGD(net_sgd.parameters(),lr=LR)
-loss_func = torch.nn.L1Loss(reduction='sum')
-loss_his = []
-
-
-# training
-EPOCH = 1000
-for epoch in range(EPOCH):
-    #print('Epoch: ', epoch)
-    for step,(y,x) in enumerate(dataloader):
-        output = net_sgd(x)
-        loss = loss_func(output,y)
-        opt_sgd.zero_grad()
-        loss.backward()
-        opt_sgd.step()
-        loss_his.append(loss.data.numpy())
-    if  np.mod(epoch,50) == 0:
-        print('epoch:{},loss:{}'.format(epoch, loss))
-
-torch.save(loss_his,'loss.pt')
-torch.save(net_sgd.weight,'word_piece_embedding_1000e_500b.pt')
-
+    # training
+    EPOCH = epoch
+    for epoch in range(EPOCH):
+        # print('Epoch: ', epoch)
+        for step,(y,x) in enumerate(dataloader):
+            output = net_sgd(x)
+            loss = loss_func(output,y)
+            opt_sgd.zero_grad()
+            loss.backward()
+            opt_sgd.step()
+            loss_his.append(loss.data.numpy())
+        if  np.mod(epoch,50) == 0:
+            print('epoch:{}, loss:{}'.format(epoch, np.mean(loss_his)))
+    torch.save(loss_his,'loss.pt')
+    torch.save(net_sgd.weight,'test.pt')
 
 
+def main():
+    arg_epoch = None
+    arg_batch = None
+    arg_lr = None
+    arg_help = "{0} -e <epoch> -b <batch> -l <learning rate>".format(sys.argv[0])
+
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "h:e:b:l:", ["help", "epoch=","batch=", "lr="])
+    except:
+        print(arg_help)
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt in ("-h", "--help"):
+            print(arg_help)  # print the help message
+            sys.exit(2)
+        elif opt in ("-e", "--epoch"):
+            arg_epoch = arg
+        elif opt in ("-b", "--batch"):
+            arg_batch = arg
+        elif opt in ("-l", "--lr"):
+            arg_lr = arg
+
+    train(epoch=arg_epoch,batch=arg_batch,lr=arg_lr)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
 
 
