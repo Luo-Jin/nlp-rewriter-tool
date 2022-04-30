@@ -121,7 +121,7 @@ def main():
         elif opt in ("-l", "--lr"):
             arg_lr = arg
     print(arg_batch)
-    train(epoch=arg_epoch,batch=arg_batch,lr=arg_lr)
+    train(epoch=int(arg_epoch),batch=int(arg_batch),lr=float(arg_lr))
 
 
 if __name__ == "__main__":
