@@ -115,13 +115,13 @@ def main():
             print(arg_help)  # print the help message
             sys.exit(2)
         elif opt in ("-e", "--epoch"):
-            arg_epoch = arg
+            arg_epoch = int(arg)
         elif opt in ("-b", "--batch"):
-            arg_batch = arg
+            arg_batch = int(arg)
         elif opt in ("-l", "--lr"):
-            arg_lr = arg
+            arg_lr = float(arg)
     print(arg_batch)
-    train(epoch=int(arg_epoch),batch=int(arg_batch),lr=float(arg_lr))
+    train(epoch=arg_epoch,batch=arg_batch,lr=arg_lr)
 
 
 if __name__ == "__main__":
