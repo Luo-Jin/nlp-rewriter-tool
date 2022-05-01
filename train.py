@@ -52,7 +52,7 @@ class EmbeddingModel(nn.Module):
 
     def forward(self, x):
         out = self.linear(x)
-        #out = self.sigmod(out)
+        out = self.sigmod(out)
         return out
 
 def train(epoch:int,batch:int,lr:float):
@@ -65,15 +65,15 @@ def train(epoch:int,batch:int,lr:float):
     #E = torch.rand(size=[400,30])
     # prepare dataloader
     dt = WordEmbeddingDataset(E,Tw)
-    dataloader = tud.DataLoader(dt, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
+    dataloader = tud.DataLoader(dt, batch_size=BATCH_SIZE, shuffle=False, num_workers=48)
 
     # define the hyperprameters
     LR = lr
     # define the nn model and optimizer and loss function
     net_sgd = EmbeddingModel(Tw.shape[1], E.shape[1])
     opt_sgd = torch.optim.SGD(net_sgd.parameters(), lr=LR)
-    # loss_func = torch.nn.L1Loss(reduction='sum')
-    loss_func = torch.nn.SmoothL1Loss(reduction='mean')
+    #loss_func = torch.nn.L1Loss(reduction='mean')
+    loss_func = torch.nn.SmoothL1Loss()
     loss_his = []
     loss_epoch = []
 
@@ -89,14 +89,13 @@ def train(epoch:int,batch:int,lr:float):
             loss.backward()
             opt_sgd.step()
             loss_his.append(loss.data.numpy())
-        if  np.mod(epoch,100) == 0:
+        if  np.mod(epoch,10) == 0:
             time2 = time.time()
             interval = time2 - time1
             time1 = time2
             torch.save(loss_his, 'loss.pt')
             torch.save(net_sgd.weight, 'weight.pt')
-            print('epoch:{} run {} seconds, loss:{}'.format(epoch, interval,np.mean(loss_his[epoch*len(dt)/batch:(epoch+1)*len(dt)/batch-1])))
-
+            print('epoch:{},runtime:{} loss:{}'.format(epoch,interval,np.mean(loss_his[int(epoch*len(dt)/BATCH_SIZE):int((epoch+1)*len(dt)/BATCH_SIZE)-1])))
 
 def main():
     arg_epoch = None
