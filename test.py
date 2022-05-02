@@ -5,42 +5,75 @@ import stanza
 # print(*[f'token: {ent.text}\ttype: {ent.type}' for sent in doc.sentences for ent in sent.ents], sep='\n')
 
 
-
-from matplotlib  import pyplot as plt
-import torch
-l = {}
-#x = torch.tensor([[torch.from_numpy(t) for t  in torch.load('test/sig_l1_e1000_b5000_l0.5.pt')]])
-l['L1Loss, Sigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/sig_l1_e1000_b5000_l0.5.pt')])
-l['L1Loss, noSigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/nosig_l1_e1000_b5000_l0.5.pt')])
-l['SmoothL1Loss, Sigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/sig_sml1_e1000_b5000_l0.5.pt')])
-l['SmoothL1Loss, noSigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/nosig_sml1_e1000_b5000_l0.5.pt')])
-i = 0
-for k,v in l.items():
-    i = i + 1
-    v = v.view(int(v.size(0) / 80), 80)
-    ax = plt.subplot(220+i)
-    ax.set_title(k)
-    plt.plot(torch.arange(v.size(0)),torch.mean(v,dim=-1))
-    plt.xlabel('epoch')
-    plt.ylabel('loss (mean)')
-plt.subplots_adjust(wspace=0.5,hspace=0.5)
-plt.show()
-
-
-
-
-
-# plt.subplot(221)
-# plt.subplot(222)
-# plt.subplot(223)
-# plt.subplot(224)
-#
+# from matplotlib  import pyplot as plt
+# import torch
+# l = {}
+# #x = torch.tensor([[torch.from_numpy(t) for t  in torch.load('test/sig_l1_e1000_b5000_l0.5.pt')]])
+# l['L1Loss, Sigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/sig_l1_e1000_b5000_l0.5.pt')])
+# l['L1Loss, noSigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/nosig_l1_e1000_b5000_l0.5.pt')])
+# l['SmoothL1Loss, Sigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/sig_sml1_e1000_b5000_l0.5.pt')])
+# l['SmoothL1Loss, noSigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/nosig_sml1_e1000_b5000_l0.5.pt')])
+# i = 0
+# for k,v in l.items():
+#     i = i + 1
+#     v = v.view(int(v.size(0) / 80), 80)
+#     ax = plt.subplot(220+i)
+#     ax.set_title(k)
+#     plt.plot(torch.arange(v.size(0)),torch.mean(v,dim=-1))
+#     plt.xlabel('epoch')
+#     plt.ylabel('loss (mean)')
+# plt.subplots_adjust(wspace=0.5,hspace=0.5)
 # plt.show()
 
-#
-# plt.plot(torch.arange(x.size(0)),torch.mean(x,dim=-1))
-# plt.title('Sigmoid, loss=L1Loss, epoch=1000, batch_size=5000, lr=0.5')
-# plt.xlabel('epoch')
-# plt.ylabel('loss')
-# plt.show()
+import curses
+from curses.textpad import Textbox, rectangle
+import curses
+from curses import wrapper
+stdscr = curses.initscr()
+curses.noecho()
 
+
+
+
+def main(stdscr):
+    # Clear screen
+    stdscr.clear()
+    stdscr.refresh()
+    #stdscr.getkey()
+    test(stdscr)
+
+
+def test(stdscr):
+    stdscr.addstr(0,0,"Enter IM message: (hit Ctrl-G to send)",curses.COLOR_WHITE)
+    uly = 1
+    ulx = 0
+    lry = 7
+    lrx = 30
+    # editwin = curses.newwin(5,30, 2,1)
+    rectangle(stdscr, uly,ulx,lry,lrx)
+    stdscr.refresh()
+    curses.echo()
+    while True:
+        c = stdscr.getkey()
+        if c == 'KEY_UP':
+            stdscr.clear()
+        elif c == 'KEY_RIGHT':
+            stdscr.clear()
+            stdscr.addstr(0,0,"Enter IM message: (hit Ctrl-G to send)",curses.COLOR_WHITE)
+            ulx = ulx + 1
+            lrx = lrx + 1
+            rectangle(stdscr, uly, ulx, lry, lrx)
+        elif c == 'KEY_LEFT':
+            stdscr.clear()
+            stdscr.addstr(0,0,"Enter IM message: (hit Ctrl-G to send)",curses.COLOR_WHITE)
+            ulx = ulx - 1
+            lrx = lrx - 1
+            rectangle(stdscr, uly, ulx, lry, lrx)
+        elif c == 'q':
+            break  # Exit the while loop
+        elif c == curses.KEY_HOME:
+            x = y = 0
+
+
+
+wrapper(main)
