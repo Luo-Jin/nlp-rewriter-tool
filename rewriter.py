@@ -37,7 +37,7 @@ import copy
 # download bert embeddings
 tokenizer = BertTokenizer.from_pretrained('./Bert/vocabulary')
 model = BertForMaskedLM.from_pretrained("./Bert/model/maskedLM")
-word_piece_embeddings = torch.load('word-piece-embedding.txt').t()
+word_piece_embeddings = torch.load('test/sig_sml1_e1000_5000b_0.5l_weight.pt').t()
 # download English model
 # stanza.download('en')
 
@@ -131,15 +131,16 @@ def plm(pos,tokens):
     return Plm
 
 def rewriter(txt,σ=0.975,k=0.1,batch=3):
+    # set minibatch size of this task, determine how many sentences will be created in one call.
     text = [txt] * batch
     org_tokens = tokenizer(text, return_tensors="pt")
-    punctuations = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0, "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,
+    special_tokens = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0, "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,
                     ".": 0, "?": 0, "/": 0, ">": 0, "<": 0, "{": 0, "}": 0}
-    punctuations = {k:tokenizer.convert_tokens_to_ids(k) for k,v in punctuations.items()}
-    # track all replaceable word's position
+    special_tokens = {k:tokenizer.convert_tokens_to_ids(k) for k,v in special_tokens.items()}
+    # determine all replaceable positions in the sentence.
     mask_pos = []
     for i in range(org_tokens["input_ids"][0].size(0)):
-        if org_tokens["input_ids"][0][i] not in punctuations.values():
+        if org_tokens["input_ids"][0][i] not in special_tokens.values():
             mask_pos.append(i)
     # iteratively replace the mask words
     i = 1
