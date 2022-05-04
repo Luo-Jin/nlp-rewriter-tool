@@ -1,4 +1,4 @@
-import stanza
+#import stanza
 #stanza.download('en',model_dir='stanza')       # This downloads the English models for the neural pipeline
 # nlp = stanza.Pipeline('en',model_dir='stanza',processors='tokenize,ner') # This sets up a default neural pipeline in English
 # doc = nlp("Auckland")
@@ -24,56 +24,6 @@ import stanza
 #     plt.ylabel('loss (mean)')
 # plt.subplots_adjust(wspace=0.5,hspace=0.5)
 # plt.show()
-
-import curses
-from curses.textpad import Textbox, rectangle
-import curses
-from curses import wrapper
-stdscr = curses.initscr()
-curses.noecho()
+import numpy as np
 
 
-
-
-def main(stdscr):
-    # Clear screen
-    stdscr.clear()
-    stdscr.refresh()
-    #stdscr.getkey()
-    test(stdscr)
-
-
-def test(stdscr):
-    stdscr.addstr(0,0,"Enter IM message: (hit Ctrl-G to send)",curses.COLOR_WHITE)
-    uly = 1
-    ulx = 0
-    lry = 7
-    lrx = 30
-    # editwin = curses.newwin(5,30, 2,1)
-    rectangle(stdscr, uly,ulx,lry,lrx)
-    stdscr.refresh()
-    curses.echo()
-    while True:
-        c = stdscr.getkey()
-        if c == 'KEY_UP':
-            stdscr.clear()
-        elif c == 'KEY_RIGHT':
-            stdscr.clear()
-            stdscr.addstr(0,0,"Enter IM message: (hit Ctrl-G to send)",curses.COLOR_WHITE)
-            ulx = ulx + 1
-            lrx = lrx + 1
-            rectangle(stdscr, uly, ulx, lry, lrx)
-        elif c == 'KEY_LEFT':
-            stdscr.clear()
-            stdscr.addstr(0,0,"Enter IM message: (hit Ctrl-G to send)",curses.COLOR_WHITE)
-            ulx = ulx - 1
-            lrx = lrx - 1
-            rectangle(stdscr, uly, ulx, lry, lrx)
-        elif c == 'q':
-            break  # Exit the while loop
-        elif c == curses.KEY_HOME:
-            x = y = 0
-
-
-
-wrapper(main)
