@@ -15,7 +15,8 @@ x = 0
 # [str,style,y,x]
 s = [["i'm a tester.",0,0,0]
     ,["this is a new story, which has been downloaded for many times.",0,0,0]
-    ,["that is a new story and also been downloaded very often.", 0,0,0]]
+    ,["that is a new story and also been downloaded very often.", 0,0,0]
+     ,["Mom will take you to the park this afternoon by feet.",0,0,0]]
 
 def main(stdscr):
     # Clear screen
@@ -51,8 +52,9 @@ def movesentences(stdscr,pos):
     stdscr.clear()
     x = 0
     y = 0
-    stdscr.addstr(y, x, "Choose Sentence by < and > Arrow:", curses.color_pair(3))
+    stdscr.addstr(y, x, "Choose sentence using < and > arrow:", curses.color_pair(3))
     y = y + 2
+    x = x + 4
     for i in np.arange(len(s)):
         total_size = x + len(s[i][0])
         l = [line_size] * int(total_size / line_size)
