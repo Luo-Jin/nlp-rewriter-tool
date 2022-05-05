@@ -30,14 +30,14 @@ import getopt
 import random
 import torch
 import copy
-
+import spacy
 
 # cache_dir = 'GloVe6B5429'
 # glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
 # download bert embeddings
 tokenizer = BertTokenizer.from_pretrained('./Bert/vocabulary')
 model = BertForMaskedLM.from_pretrained("./Bert/model/maskedLM")
-word_piece_embeddings = torch.load('test/sig_sml1_e1000_5000b_0.5l_weight.pt').t()
+word_piece_embeddings = torch.load('sig_sml1_e1000_b5000_l0.5_weight.pt').t()
 # download English model
 # stanza.download('en')
 
@@ -67,25 +67,29 @@ def main():
     σ = 0.975 if arg_sim is None else float(arg_sim)
     k = 0.1 if arg_enf is None else float(arg_enf)
     # read text from specific txt file
-    text = readtxt(arg_txt)
-    screen_clear()
-    print("\033[1;33mThe original sentence is :\033[0m")
-    print("\033[7m\n{}\n\033[0m".format(text))
-    tokens = rewriter(text, σ, k)
-    print("\033[1;33mThe sentence is revised with smooth parameter k={} "
-          "and similarity rate σ={} :\033[0m".format(k,σ))
-    for i in torch.arange(len(tokens["input_ids"])):
-        print("{}{}{}"
-              .format(i + 1
-                      , "."
-                      , tokenizer.decode(tokens["input_ids"][i], skip_special_tokens=True)))
+    texts = readtxt(arg_txt)
+    print(texts)
+    # screen_clear()
+    # print("\033[1;33mThe original sentence is :\033[0m")
+    # print("\033[7m\n{}\n\033[0m".format(texts))
+    # tokens = rewriter(texts, σ, k)
+    # print("\033[1;33mThe sentence is revised with smooth parameter k={} "
+    #       "and similarity rate σ={} :\033[0m".format(k,σ))
+    # for i in torch.arange(len(tokens["input_ids"])):
+    #     print("{}{}{}"
+    #           .format(i + 1
+    #                   , "."
+    #                   , tokenizer.decode(tokens["input_ids"][i], skip_special_tokens=True)))
 
 
 def readtxt(txt):
     f = open(txt, mode='r')
-    text = f.readline()
+    texts = f.readlines()
+    nlp = spacy.load("en_core_web_sm")
+    doc = nlp(texts[0])
+    sents = [[sent.text,0,0,0] for sent in doc.sents]
     f.close()
-    return text
+    return sents
 
 # define our clear function
 def screen_clear():
