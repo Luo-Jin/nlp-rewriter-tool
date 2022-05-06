@@ -69,27 +69,27 @@ def main():
     # read text from specific txt file
     texts = readtxt(arg_txt)
     print(texts)
-    # screen_clear()
-    # print("\033[1;33mThe original sentence is :\033[0m")
-    # print("\033[7m\n{}\n\033[0m".format(texts))
-    # tokens = rewriter(texts, σ, k)
-    # print("\033[1;33mThe sentence is revised with smooth parameter k={} "
-    #       "and similarity rate σ={} :\033[0m".format(k,σ))
-    # for i in torch.arange(len(tokens["input_ids"])):
-    #     print("{}{}{}"
-    #           .format(i + 1
-    #                   , "."
-    #                   , tokenizer.decode(tokens["input_ids"][i], skip_special_tokens=True)))
+    screen_clear()
+    print("\033[1;33mThe original sentence is :\033[0m")
+    print("\033[7m\n{}\n\033[0m".format(texts))
+    tokens = rewriter(texts, σ, k)
+    print("\033[1;33mThe sentence is revised with smooth parameter k={} "
+          "and similarity rate σ={} :\033[0m".format(k,σ))
+    for i in torch.arange(len(tokens["input_ids"])):
+        print("{}{}{}"
+              .format(i + 1
+                      , "."
+                      , tokenizer.decode(tokens["input_ids"][i], skip_special_tokens=True)))
 
 
 def readtxt(txt):
     f = open(txt, mode='r')
-    texts = f.readlines()
-    nlp = spacy.load("en_core_web_sm")
-    doc = nlp(texts[0])
-    sents = [[sent.text,0,0,0] for sent in doc.sents]
+    texts = f.readline()
+    #nlp = spacy.load("en_core_web_sm")
+    #doc = nlp(texts[0])
+    #sents = [[sent.text,0,0,0] for sent in doc.sents]
     f.close()
-    return sents
+    return texts
 
 # define our clear function
 def screen_clear():
