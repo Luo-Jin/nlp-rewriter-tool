@@ -89,53 +89,39 @@ import numpy as np
 #     y = y+1
 #     x = 0
 
-import curses
+from time import sleep
+import curses, curses.panel
 
-# content - array of lines (list)
-mylines = ["Line {0} ".format(id)*3 for id in range(1,11)]
+def make_panel(h,l, y,x, str):
+ win = curses.newwin(h,l, y,x)
+ win.erase()
+ win.box()
+ win.addstr(2, 2, str)
 
-import pprint
-pprint.pprint(mylines)
+ panel = curses.panel.new_panel(win)
+ return win, panel
 
-def main(stdscr):
-  hlines = begin_y = begin_x = 5 ; wcols = 10
-  # calculate total content size
-  padhlines = len(mylines)
-  padwcols = 0
-  for line in mylines:
-    if len(line) > padwcols: padwcols = len(line)
-  padhlines += 2 ; padwcols += 2 # allow border
-  stdscr.addstr("padhlines "+str(padhlines)+" padwcols "+str(padwcols)+"; ")
-  # both newpad and subpad are <class '_curses.curses window'>:
-  mypadn = curses.newpad(padhlines, padwcols)
-  mypads = stdscr.subpad(padhlines, padwcols, begin_y, begin_x+padwcols+4)
-  stdscr.addstr(str(type(mypadn))+" "+str(type(mypads)) + "\n")
-  mypadn.scrollok(1)
-  mypadn.idlok(1)
-  mypads.scrollok(1)
-  mypads.idlok(1)
-  mypadn.border(0) # first ...
-  mypads.border(0) # ... border
-  for line in mylines:
-    mypadn.addstr(padhlines-1,1, line)
-    mypadn.scroll(1)
-    mypads.addstr(padhlines-1,1, line)
-    mypads.scroll(1)
-  mypadn.border(0) # second ...
-  mypads.border(0) # ... border
-  # refresh parent first, to render the texts on top
-  #~ stdscr.refresh()
-  # refresh the pads next
-  mypadn.refresh(0,0, begin_y,begin_x, begin_y+hlines, begin_x+padwcols)
-  mypads.refresh()
-  mypads.touchwin()
-  mypadn.touchwin()
-  stdscr.touchwin() # no real effect here
-  #stdscr.refresh() # not here! overwrites newpad!
-  mypadn.getch()
-  # even THIS command erases newpad!
-  # (unless stdscr.refresh() previously):
-  stdscr.getch()
+def test(stdscr):
+ try:
+  curses.curs_set(0)
+ except:
+  pass
+ stdscr.box()
+ stdscr.addstr(2, 2, "panels everywhere")
+ win1, panel1 = make_panel(10,12, 5,5, "Panel 1")
+ win2, panel2 = make_panel(10,12, 8,8, "Panel 2")
+ curses.panel.update_panels(); stdscr.refresh()
+ sleep(1)
 
-if __name__ == "__main__":
-    curses.wrapper(main)
+ panel1.top(); curses.panel.update_panels(); stdscr.refresh()
+ sleep(1)
+
+ for i in range(20):
+  panel2.move(8, 8+i)
+  curses.panel.update_panels(); stdscr.refresh()
+  sleep(0.1)
+
+ sleep(1)
+
+if __name__ == '__main__':
+ curses.wrapper(test)
