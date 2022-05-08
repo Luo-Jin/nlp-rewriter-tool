@@ -10,9 +10,8 @@ screen = None
 txt_box = None
 revised_box = None
 nlp = spacy.load("en_core_web_sm")
+txtfile = 'sample.txt'
 # initialize sentences list
-paragraph = []
-sentences = []
 replaced_sents = []
 # model parameters
 σ = 0.97
@@ -45,7 +44,8 @@ class Textframe(object):
         self.__paragraphs = []     # text paragraphs contain sentences
         self.__sentences = []      # text sentences
         self.__id = id             # instance id
-        self.enterKey = None       # process enter key strike
+        self.enterKey = None       # process enter key strike,
+        self.alt_s = None          # process revised_box alt+s,
 
     def getWin(self):
         return self.__win
@@ -53,8 +53,8 @@ class Textframe(object):
     def getParagragh(self):
         return self.__paragraphs
 
-    def register(self,func):
-        self.enterKey = func
+    # def register(self,func):
+    #     self.enterKey = func
 
     def setText(self,texts):
         # reset parameters
@@ -92,10 +92,12 @@ class Textframe(object):
                 self.calcPosition(1)
             elif c == curses.KEY_LEFT:
                 self.calcPosition(-1)
-            elif c == 10:
-                self.enterKey()
-                if self.quit == 1:
+            elif c == 159:           # alt+s, save changes to txt_box
+                self.alt_s()
+                if self.__id == 1:
                     break
+            elif c == 10:
+                self.enterKey(self.__id)
             elif c == 113:
                 break  # Exit the while loop
             elif c == curses.KEY_HOME:
@@ -224,7 +226,7 @@ def conformChange():
 
 
 
-def reviseSentence():
+def refineSentence(id):
     paragraph = txt_box.getParagragh()
     tokens = rw.rewriter(paragraph[txt_box.current_para_idx][txt_box.current_sent_idx][0], σ, k)
     sents = []
@@ -237,7 +239,25 @@ def reviseSentence():
     revised_box.calcPosition(0)
     revised_box.printText()
     curses.beep()
-    revised_box.selectSentence()
+    if id == 0:
+        revised_box.selectSentence()
+
+def saveChange():
+    paras = txt_box.getParagragh()
+    txt = []
+    for para in paras:
+        sents = ""
+        for sent in para:
+            sents = sents + sent[0]
+        sents = sents + "\n"
+        txt.append(sents)
+    filename =  "revised_"+txtfile
+    f = open(filename,'w')
+    f.writelines(txt)
+    f.flush()
+    f.close()
+
+
 
 def main(stdscr):
     global r_pos,max_line,window_size,screen,txt_box,revised_box
@@ -252,12 +272,14 @@ def main(stdscr):
     curses.curs_set(0)
     # create text frame to display original sentences
     txt_box = Textframe(stdscr)
-    txt_box.enterKey =  reviseSentence
+    txt_box.enterKey =  refineSentence
+    txt_box.alt_s    = saveChange
     # create text frame to display revised sentences width=200,height=10,y=26,x=5
     revised_box = Textframe(stdscr, 10, 100, 26, 5, 1)
     revised_box.indent = 0
-    revised_box.enterKey = conformChange
-    txt_box.setText(readTXT('sample.txt'))
+    revised_box.enterKey = refineSentence
+    revised_box.alt_s = conformChange
+    txt_box.setText(readTXT(txtfile))
     txt_box.calcPosition(0)
     txt_box.printText()
     #revised_box.register(fun2)
