@@ -4,7 +4,7 @@ import spacy
 import torch
 import numpy as np
 import rewriter as rw
-
+import copy
 # text frame objects
 screen = None
 txt_box = None
@@ -45,7 +45,8 @@ class Textframe(object):
         self.__sentences = []      # text sentences
         self.__id = id             # instance id
         self.enterKey = None       # process enter key strike,
-        self.alt_s = None          # process revised_box alt+s,
+        self.alt_s = None          # process alt+s,
+        self.u =None               # process 'u' strike
 
     def getWin(self):
         return self.__win
@@ -96,10 +97,12 @@ class Textframe(object):
                 self.alt_s()
                 if self.__id == 1:
                     break
-            elif c == 10:
+            elif c == 117:           # 'u', undo changes.
+                self.u()
+            elif c == 10:            # Enter key.
                 self.enterKey(self.__id)
-            elif c == 113:
-                break  # Exit the while loop
+            elif c == 113:           # 'q' , quit loop
+                break
             elif c == curses.KEY_HOME:
                 x = 0
             self.calcPosition(0)
@@ -213,18 +216,14 @@ def readTXT(txt):
     f.close()
     return texts
 
-
-
 def conformChange():
     sent = revised_box.getParagragh()[revised_box.current_para_idx][revised_box.current_sent_idx]
     txt = str(sent[0])
-    replaced_sent = txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx]
+    replaced_sent = copy.deepcopy(txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx])
     replaced_sents.append(replaced_sent)
     txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx][0] = txt
     txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx][7] = 1
-    revised_box.quit = 1
-
-
+    #revised_box.quit = 1
 
 def refineSentence(id):
     paragraph = txt_box.getParagragh()
@@ -257,7 +256,13 @@ def saveChange():
     f.flush()
     f.close()
 
-
+def undoChange():
+    for sent in replaced_sents:
+        if sent[6] == txt_box.select_idx:
+            txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx][0] = str(sent[0])
+            txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx][7] = 0
+            replaced_sents.remove(sent)
+            break
 
 def main(stdscr):
     global r_pos,max_line,window_size,screen,txt_box,revised_box
@@ -274,6 +279,7 @@ def main(stdscr):
     txt_box = Textframe(stdscr)
     txt_box.enterKey =  refineSentence
     txt_box.alt_s    = saveChange
+    txt_box.u        = undoChange
     # create text frame to display revised sentences width=200,height=10,y=26,x=5
     revised_box = Textframe(stdscr, 10, 100, 26, 5, 1)
     revised_box.indent = 0
