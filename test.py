@@ -89,39 +89,118 @@ import numpy as np
 #     y = y+1
 #     x = 0
 
-from time import sleep
-import curses, curses.panel
+# Curses modules
+import curses
+from sys import argv
+from curses import KEY_MOUSE
+from random import randint
+from time import time, sleep
 
-def make_panel(h,l, y,x, str):
- win = curses.newwin(h,l, y,x)
- win.erase()
- win.box()
- win.addstr(2, 2, str)
+# Get chocolate bar size and player names
+players = {}
+try:
+    x = int(argv[1])
+    y = int(argv[2])
+    players[1] = str(argv[3])
+    players[2] = str(argv[4])
+except:
+    print("Error: please supply a valid chocolate bar size and two valid player names.")
+    # E.g. "python3 chomp.py 15 5 Player1 Player2"
+    exit(1)
 
- panel = curses.panel.new_panel(win)
- return win, panel
+# Init curses
+main = curses.initscr()
 
-def test(stdscr):
- try:
-  curses.curs_set(0)
- except:
-  pass
- stdscr.box()
- stdscr.addstr(2, 2, "panels everywhere")
- win1, panel1 = make_panel(10,12, 5,5, "Panel 1")
- win2, panel2 = make_panel(10,12, 8,8, "Panel 2")
- curses.panel.update_panels(); stdscr.refresh()
- sleep(1)
+# Check if window is big enough
+window_y,window_x = main.getmaxyx()
+if window_y <= y + 2 or window_x <= x + 2:
+    print("Terminal must be at least " + str(x + 2) + "x" + str(y + 2) + ".")
+    curses.endwin()
+    exit(1)
 
- panel1.top(); curses.panel.update_panels(); stdscr.refresh()
- sleep(1)
+# Create new curses window of size (x+2)*(y+2) to accomodate border
+win = curses.newwin(y + 2, x + 2, 0, 0)
+win.keypad(1)
+curses.noecho()
+curses.curs_set(0)
+win.border(0)
+win.nodelay(1)
+curses.mousemask(1)
 
- for i in range(20):
-  panel2.move(8, 8+i)
-  curses.panel.update_panels(); stdscr.refresh()
-  sleep(0.1)
+# Define useful functions
+# Return list with all coordinates of chocolate bar pieces
+def get_chocolate(y,x):
+    coords = []
+    for i in range(1, y + 1): # Go over all horizontal lines (border uses y = 0)
+        for p in range(1, x + 1): # Go over every piece in line (border uses x = 0)
+            coords.append((i, p)) # Curses works with (y,x) coordinates system
+    return coords
 
- sleep(1)
+# Print chocolate pieces
+def print_chocolate(coords,y,x): # It is easier to go over all coordinates
+    for i in range(1, y + 1):    # checking if (y,x) is a piece of chocolate
+        for p in range(1, x + 1):
+            if (i,p) == (y, 1):  # Bottom left corner is the poisonous piece
+                win.addch(i, p, "*")
+            elif (i,p) in coords:
+                win.addch(i, p, '#')
+            else:
+                win.addch(i, p, ' ')
 
-if __name__ == '__main__':
- curses.wrapper(test)
+# Eat chocolate pieces
+def eat(coords, x, click_y, click_x):
+    for i in range(1, click_y + 1): # Go over rows from top to chocolate piece included (+1)
+        for p in range(click_x, x + 1): # Go over columns from clicked point to right edge
+            if (i,p) in coords:
+                coords.pop(coords.index((i, p)))
+    return coords
+
+coords = get_chocolate(y,x) # Define coordinates list
+
+player = 1 # Define player turn
+
+moves = 0 # Define moves
+
+game_start = time() # Start timer
+
+# Start curses print loop
+while True:
+    win.border(0) # Set window border
+    key = win.getch() # Listen for keys pressed or mouse clicks
+    if key == ord('q'): # When 'q' is hit quit the game
+        while True: # Ask for confirmation
+            key = win.getch()
+            win.addstr(0, 1, "| Quit? (y/n) |")
+            if key == ord('n'): # Resume game
+                break
+            if key == ord('y'): # Close window and exit
+                curses.endwin()
+                exit(0)
+
+    if key == KEY_MOUSE: # If mouse is clicked
+        _, click_x, click_y, _, _ = curses.getmouse() # Get clicked coordinates
+        # Poisonous piece cannot be chosen
+        if (click_y,click_x) in coords and (click_y,click_x) != (y, 1):
+            moves += 1 # Increase number of moves by one
+            player = abs(player - 3) # Switch between 1 and 2 --> |1-3|=2 and |2-3|=1
+            coords = eat(coords, x, click_y, click_x)
+
+    print_chocolate(coords, y, x) # Print chocolate pieces
+
+    if len(coords) == 1: # If only 1 piece is left, then it must be the poisonous one
+        break # End curses loop
+
+game_end = time() # End timer
+
+game_time = game_end - game_start # Calculate game time
+
+curses.endwin() # Close window
+
+# Print results
+print("----------------")
+print(str(players[abs(player - 3)]) + " WINS!")
+print("Number of moves: " + str(moves))
+print("Game time: " + str(round(game_time, 3)) + "s")
+print("----------------")
+
+exit(0)

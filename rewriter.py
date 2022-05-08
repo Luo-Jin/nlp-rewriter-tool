@@ -134,7 +134,7 @@ def plm(pos,tokens):
     Plm = softmax[:, pos[0]]
     return Plm
 
-def rewriter(txt,σ=0.975,k=0.1,batch=3):
+def rewriter(txt,σ=0.975,k=0.1,batch=1):
     # set minibatch size of this task, determine how many sentences will be created in one call.
     text = [txt] * batch
     org_tokens = tokenizer(text, return_tensors="pt")
@@ -149,7 +149,7 @@ def rewriter(txt,σ=0.975,k=0.1,batch=3):
     # iteratively replace the mask words
     i = 1
     tokens = copy.deepcopy(org_tokens)
-    while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0])/3:
+    while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0]):
         i = i+1
         # pick a random word in k position and mask it
         pos = random.sample(mask_pos,1)
