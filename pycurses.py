@@ -13,6 +13,7 @@ nlp = spacy.load("en_core_web_sm")
 # initialize sentences list
 paragraph = []
 sentences = []
+replaced_sents = []
 # model parameters
 σ = 0.97
 k = 0.1
@@ -38,6 +39,7 @@ class Textframe(object):
         self.para_num = 0          # number of paragraphs
         self.sent_num = 0          # number of sentences
         self.screen = stdscr       # father window
+        self.quit = 0             # indicator to quit loop
         self.__win = curses.newwin(self.frame_line, self.frame_col, y, x)   # windows object
         self.__win.keypad(True)
         self.__paragraphs = []     # text paragraphs contain sentences
@@ -73,7 +75,7 @@ class Textframe(object):
             sents = []
             j = 0
             for sent in doc.sents:
-                sents.append([sent.text, 0, 0, 0, i, j,n])
+                sents.append([sent.text, 0, 0, 0, i, j,n,0]) # ["txt",color,y,x,para_idx,sent_idx,sent_num,changed]
                 j = j + 1
                 n = n + 1
             self.__paragraphs.append(sents)
@@ -85,17 +87,20 @@ class Textframe(object):
             if c == curses.KEY_UP:
                 self.firstrow_idx = np.max([(self.firstrow_idx - 1), 0])
             elif c == curses.KEY_DOWN:
-                self.firstrow_idx = np.min([(self.firstrow_idx + 1), np.max([self.row_num - self.window_size + self.offset_y, 0])])
+                self.firstrow_idx = np.min([(self.firstrow_idx + 1),np.max([self.row_num - self.window_size + self.offset_y, 0])])
             elif c == curses.KEY_RIGHT:
                 self.calcPosition(1)
             elif c == curses.KEY_LEFT:
                 self.calcPosition(-1)
             elif c == 10:
                 self.enterKey()
+                if self.quit == 1:
+                    break
             elif c == 113:
                 break  # Exit the while loop
             elif c == curses.KEY_HOME:
                 x = 0
+            self.calcPosition(0)
             self.printText()
 
     def calcPosition(self,step):
@@ -116,7 +121,7 @@ class Textframe(object):
                 l.append(total_size % self.text_line)
                 str_len = len(para[i][0])
                 st = 0
-                para[i][1] =(1 if para[i][6] == self.select_idx else 0)
+                para[i][1] =(1 if para[i][6] == self.select_idx else (0 if para[i][7] == 0 else 2))
                 self.current_sent_idx = (i if para[i][6] == self.select_idx else self.current_sent_idx)
                 self.current_para_idx = (self.__paragraphs.index(para) if para[i][6] == self.select_idx else self.current_para_idx)
 
@@ -206,6 +211,19 @@ def readTXT(txt):
     f.close()
     return texts
 
+
+
+def conformChange():
+    sent = revised_box.getParagragh()[revised_box.current_para_idx][revised_box.current_sent_idx]
+    txt = str(sent[0])
+    replaced_sent = txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx]
+    replaced_sents.append(replaced_sent)
+    txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx][0] = txt
+    txt_box.getParagragh()[txt_box.current_para_idx][txt_box.current_sent_idx][7] = 1
+    revised_box.quit = 1
+
+
+
 def reviseSentence():
     paragraph = txt_box.getParagragh()
     tokens = rw.rewriter(paragraph[txt_box.current_para_idx][txt_box.current_sent_idx][0], σ, k)
@@ -228,19 +246,20 @@ def main(stdscr):
     # initialize
     curses.use_default_colors()
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_RED)
-    curses.init_pair(2, curses.COLOR_WHITE, -1)
+    curses.init_pair(2, curses.COLOR_CYAN, -1)
     curses.init_pair(3, curses.COLOR_RED, -1)
     curses.init_pair(4, curses.COLOR_BLUE, -1)
     curses.curs_set(0)
     # create text frame to display original sentences
     txt_box = Textframe(stdscr)
+    txt_box.enterKey =  reviseSentence
     # create text frame to display revised sentences width=200,height=10,y=26,x=5
     revised_box = Textframe(stdscr, 10, 100, 26, 5, 1)
     revised_box.indent = 0
+    revised_box.enterKey = conformChange
     txt_box.setText(readTXT('sample.txt'))
     txt_box.calcPosition(0)
     txt_box.printText()
-    txt_box.register(reviseSentence)
     #revised_box.register(fun2)
     txt_box.selectSentence()
 
