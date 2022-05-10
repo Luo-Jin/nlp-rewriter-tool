@@ -31,20 +31,27 @@ import random
 import torch
 import copy
 import curses
+import rewriter as rw
 
 
-# cache_dir = 'GloVe6B5429'
-# glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
-# download bert embeddings
-tokenizer = BertTokenizer.from_pretrained('Bert/vocabulary/')
-model = BertForMaskedLM.from_pretrained("Bert/model/maskedLM/")
-word_piece_embeddings = torch.load('sig_sml1_e1000_b5000_l0.5_weight.pt').t()
-curses.initscr()
-progress_bar = curses.newwin(1, 100, 23, 35)
-progress_bar.box()
+
+# render the screen
+screen = curses.initscr()
+t = screen.getmaxyx()
+progress_bar = curses.newwin(1,40,0,0)
+progress_bar.mvwin(int(t[0]/2),int(t[1]/2))
+progress_bar.addstr(0,0,"Loading embeddings...")
+progress_bar.refresh()
+# load the embeddings
+tokenizer = BertTokenizer.from_pretrained(rw.config.get("PRE_TRAINED","bert_vocal"))
+model = BertForMaskedLM.from_pretrained(rw.config.get("PRE_TRAINED","bert_model"))
+word_piece_embeddings = torch.load(rw.config.get("PRE_TRAINED","embeddings")).t()
+progress_bar.clear()
+progress_bar.mvwin(23,35)
 progress_counter = 0
 
 def main():
+    global tokenizer,model,word_piece_embeddings
     arg_sim = None
     arg_enf = None
     arg_txt = None
@@ -68,6 +75,7 @@ def main():
             arg_enf = arg
     σ = 0.975 if arg_sim is None else float(arg_sim)
     k = 0.1 if arg_enf is None else float(arg_enf)
+
     # read text from specific txt file
     texts = readtxt(arg_txt)
     print(texts)

@@ -70,7 +70,6 @@ def train(epoch:int,batch:int,lr:float):
     # define the hyperprameters
     LR = lr
     # define the nn model and optimizer and loss function
-                               #30k         #300
     net_sgd = EmbeddingModel(Tw.shape[1], E.shape[1])
     opt_sgd = torch.optim.SGD(net_sgd.parameters(), lr=LR)
     #loss_func = torch.nn.L1Loss(reduction='mean')
@@ -84,8 +83,8 @@ def train(epoch:int,batch:int,lr:float):
     for epoch in range(EPOCH):
         # print('Epoch: ', epoch)
         for step,(y,x) in enumerate(dataloader):
-            output = net_sgd(x)  # T(w) [400k x 30k] * E' [30k x 300]
-            loss = loss_func(output,y)  # y = E(w) [400k x 300]
+            output = net_sgd(x)
+            loss = loss_func(output,y)
             opt_sgd.zero_grad()
             loss.backward()
             opt_sgd.step()
@@ -96,7 +95,7 @@ def train(epoch:int,batch:int,lr:float):
             time1 = time2
             torch.save(loss_his, 'loss.pt')
             torch.save(net_sgd.weight, 'weight.pt')
-            print('epoch:{},runtime:{} loss:{}'.format(epoch,interval,np.mean(loss_his[int(epoch*len(dt)/BATCH_SIZE):int((epoch+1)*len(dt)/BATCH_SIZE)-1])))
+            print('epoch:{},runtime:{},loss:{}'.format(epoch,interval,np.mean(loss_his[int(epoch*len(dt)/BATCH_SIZE):int((epoch+1)*len(dt)/BATCH_SIZE)-1])))
 
 def main():
     arg_epoch = None

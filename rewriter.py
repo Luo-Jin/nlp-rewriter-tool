@@ -15,12 +15,14 @@ from configparser import ConfigParser
 import spacy
 import torch
 import numpy as np
-import generator as gen
 import copy
 import os
+import generator as gen
 
 # config object
+file_path = os.path.join(os.path.abspath("."), "rewriter.ini")
 config = ConfigParser()
+config.read(file_path)
 # text frame objects
 screen = None
 txt_box = None
@@ -265,10 +267,8 @@ def undoChange():
 def main(stdscr):
     global config,screen,txt_box,revised_box,σ,k,batch
     # read config file
-    file_path = os.path.join(os.path.abspath("."), "rewriter.ini")
-    config.read(file_path)
-    σ = float(config.get("MODEL_PARAM",'σ'))
-    k = float(config.get("MODEL_PARAM",'k'))
+    σ = config.getfloat("MODEL_PARAM",'σ')
+    k = config.getfloat("MODEL_PARAM",'k')
     batch = config.get("MODEL_PARAM",'batch')
     # set tbe screen
     screen = stdscr
@@ -280,20 +280,20 @@ def main(stdscr):
     curses.init_pair(4, curses.COLOR_BLUE, -1)
     curses.curs_set(0)
     # create text frame to display original sentences
-    txt_box = Textframe(stdscr,int(config.get('GUI','txtbox_line'))
-                        ,int(config.get('GUI','txtbox_col'))
-                        ,int(config.get('GUI','txtbox_y'))
-                        ,int(config.get('GUI','txtbox_x'))
-                        ,int(config.get('GUI','txtbox_id')))
+    txt_box = Textframe(stdscr,config.getint('GUI','txtbox_line')
+                        ,config.getint('GUI','txtbox_col')
+                        ,config.getint('GUI','txtbox_y')
+                        ,config.getint('GUI','txtbox_x')
+                        ,config.getint('GUI','txtbox_id'))
     txt_box.enterKey = refineSentence
     txt_box.alt_s    = saveChange
     txt_box.u        = undoChange
     # create text frame to display revised sentences width=200,height=10,y=26,x=5
-    revised_box = Textframe(stdscr,int(config.get('GUI','revisedbox_line'))
-                        ,int(config.get('GUI','revisedbox_col'))
-                        ,int(config.get('GUI','revisedbox_y'))
-                        ,int(config.get('GUI','revisedbox_x'))
-                        ,int(config.get('GUI','revisedbox_id')))
+    revised_box = Textframe(stdscr,config.getint('GUI','revisedbox_line')
+                        ,config.getint('GUI','revisedbox_col')
+                        ,config.getint('GUI','revisedbox_y')
+                        ,config.getint('GUI','revisedbox_x')
+                        ,config.getint('GUI','revisedbox_id'))
     revised_box.indent = 0
     revised_box.enterKey = refineSentence
     revised_box.alt_s = conformChange
