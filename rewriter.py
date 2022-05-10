@@ -1,8 +1,8 @@
 ###############################################
-#   File    : rewriter.py
+#   File    : generator.py
 #   Author  : Jin luo
 #   Date    : 2022-04-23
-#   Input   : rewriter.py -t <text> -s <similarity> -e <enforcement>
+#   Input   : generator.py -t <text> -s <similarity> -e <enforcement>
 #             s=0.972 and e=0.01 if not specified
 #   Output  : three revised copies of the original sentences
 ###############################################
@@ -31,16 +31,21 @@ import random
 import torch
 import copy
 import spacy
+import curses
+from curses import wrapper
+
 
 # cache_dir = 'GloVe6B5429'
 # glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
 # download bert embeddings
-tokenizer = BertTokenizer.from_pretrained('./Bert/vocabulary')
-model = BertForMaskedLM.from_pretrained("./Bert/model/maskedLM")
+tokenizer = BertTokenizer.from_pretrained('Bert/vocabulary')
+model = BertForMaskedLM.from_pretrained("Bert/model/maskedLM")
 word_piece_embeddings = torch.load('sig_sml1_e1000_b5000_l0.5_weight.pt').t()
-# download English model
 # stanza.download('en')
-
+curses.initscr()
+progress_bar = curses.newwin(1, 100, 23, 35)
+progress_bar.box()
+progress_counter = 0
 
 def main():
     arg_sim = None
@@ -100,6 +105,13 @@ def screen_clear():
         _ = system('clear')
         # print out some text
 
+def update_progress(progress):
+    rangex = (50 / float(100)) * progress
+    pos = int(rangex)
+    display = '#'
+    if pos != 0:
+        progress_bar.addstr(0, pos, "{}".format(display))
+        progress_bar.refresh()
 
 def penforce(batch,pos,org_tokens,tokens,k,σ):
     # calculate the Rx for original sentence 3 x 30k x 300
@@ -135,7 +147,10 @@ def plm(pos,tokens):
     return Plm
 
 def rewriter(txt,σ=0.975,k=0.1,batch=1):
+    global progress_counter
     # set minibatch size of this task, determine how many sentences will be created in one call.
+    progress_bar.clear()
+    progress_bar.box()
     text = [txt] * batch
     org_tokens = tokenizer(text, return_tensors="pt")
     special_tokens = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0, "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,
@@ -149,8 +164,10 @@ def rewriter(txt,σ=0.975,k=0.1,batch=1):
     # iteratively replace the mask words
     i = 1
     tokens = copy.deepcopy(org_tokens)
+    progress_bar.erase()
     while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0]):
         i = i+1
+        progress_counter = progress_counter + 1
         # pick a random word in k position and mask it
         pos = random.sample(mask_pos,1)
         mask_pos.remove(pos[0])
@@ -173,8 +190,10 @@ def rewriter(txt,σ=0.975,k=0.1,batch=1):
         #                                         ,tokenizer.decode(sample_idx)))
         # replace the MASK with proposed words
         tokens["input_ids"][:,pos[0]] = sample_idx
+        update_progress(progress_counter)
+    progress_counter = 0
     return tokens
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
 

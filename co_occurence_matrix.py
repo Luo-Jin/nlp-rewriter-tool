@@ -13,7 +13,9 @@ Tw(i,j) = 1, otherwise T(i,j) = 0.
 
 in this program, I did not iterate every word-piece in 30k vocab
 instead, I chosen those word-pieces who is not identifier and is not digit
-which contains only the word-piece with "##" prefix. Does it make sense?'''
+which contains only the word-piece with "##" prefix. Does it make sense?
+
+'''
 
 
 import torch
@@ -46,4 +48,4 @@ for key in C:
             T[i,C[key]] = +1
             print("%dth row, %dth col = %d"%(i,C[key],T[i,C[key]]))
 
-torch.save(T,'word_piece_co.pt')
+torch.save(T,'word_piece_co_new.pt')

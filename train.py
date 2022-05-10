@@ -42,8 +42,8 @@ class WordEmbeddingDataset(tud.Dataset):
 class EmbeddingModel(nn.Module):
     def __init__(self, vocab_size, embed_size):
         super(EmbeddingModel,self).__init__()
-        self.vocab_size = vocab_size  # 10
-        self.embed_size = embed_size  # 5
+        self.vocab_size = vocab_size  # 30k number of tokens in BERT
+        self.embed_size = embed_size  # 300
         self.linear = nn.Linear(vocab_size,embed_size,bias=False)
         self.sigmod = nn.Sigmoid()
         self.weight = self.linear.weight
@@ -59,9 +59,9 @@ def train(epoch:int,batch:int,lr:float):
     # prepare the input
     BATCH_SIZE = batch
     cache_dir = 'GloVe6B5429'
-    Tw = torch.load('word_piece_co.pt')
+    Tw = torch.load('word_piece_co.pt') # 400k x 30k
     #Tw = torch.randint(low=0,high=1,size=[400,300])
-    E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors
+    E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors # 400k x 300
     #E = torch.rand(size=[400,30])
     # prepare dataloader
     dt = WordEmbeddingDataset(E,Tw)
@@ -70,6 +70,7 @@ def train(epoch:int,batch:int,lr:float):
     # define the hyperprameters
     LR = lr
     # define the nn model and optimizer and loss function
+                               #30k         #300
     net_sgd = EmbeddingModel(Tw.shape[1], E.shape[1])
     opt_sgd = torch.optim.SGD(net_sgd.parameters(), lr=LR)
     #loss_func = torch.nn.L1Loss(reduction='mean')
@@ -83,8 +84,8 @@ def train(epoch:int,batch:int,lr:float):
     for epoch in range(EPOCH):
         # print('Epoch: ', epoch)
         for step,(y,x) in enumerate(dataloader):
-            output = net_sgd(x)
-            loss = loss_func(output,y)
+            output = net_sgd(x)  # T(w) [400k x 30k] * E' [30k x 300]
+            loss = loss_func(output,y)  # y = E(w) [400k x 300]
             opt_sgd.zero_grad()
             loss.backward()
             opt_sgd.step()

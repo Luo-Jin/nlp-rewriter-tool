@@ -91,19 +91,20 @@ import numpy as np
 
 # Curses modules
 
-import curses, traceback
-from curses import wrapper
+# !/usr/bin/env python
 
-def main(screen):
-    screen.keypad(True)
-    while True:
-        c = screen.getch()
-        if c == 159:
-            screen.addstr(1, 5, str(curses.KEY_SAVE))
-        elif c == 113:
-            break
-        screen.addstr(5,5,str(c))
+"""
+Lyle Scott, III
+lyle@digitalfoo.net
 
-if __name__ == "__main__" :
-    wrapper(main)
+A simple demo that uses curses to scroll the terminal.
+"""
+from configparser import ConfigParser
+import os
 
+conn = ConfigParser()
+file_path = os.path.join(os.path.abspath("."),"rewriter.ini")
+if not os.path.exists(file_path):
+    raise FileNotFoundError("The file does not exit")
+conn.read(file_path)
+print(conn.get('PRE_TRAINED','bert_vocal'))

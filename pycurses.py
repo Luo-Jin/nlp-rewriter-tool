@@ -1,27 +1,42 @@
+###############################################
+#   File    : rewriter.py
+#   Author  : Jin luo
+#   Date    : 2022-04-29
+#   Input   : None
+#   Output  : None
+###############################################
+'''
+a GUI for the rewriter tool
+'''
+
 import curses, traceback
 from curses import wrapper
+from configparser import ConfigParser
 import spacy
 import torch
 import numpy as np
-import rewriter as rw
+import generator as gen
 import copy
+import os
+
+# config object
+config = ConfigParser()
 # text frame objects
 screen = None
 txt_box = None
 revised_box = None
 nlp = spacy.load("en_core_web_sm")
-txtfile = 'sample.txt'
 # initialize sentences list
 replaced_sents = []
 # model parameters
-σ = 0.97
-k = 0.1
+σ = 0
+k = 0
 batch = 1
 
 class Textframe(object):
-    def __init__(self,stdscr,line=20,col=100,y=2,x=5,id=0):
-        self.frame_line = line     # 200 by default
-        self.frame_col = col       # 20 by default
+    def __init__(self,stdscr,line,col,y,x,id):
+        self.frame_line = line     # 20 by default
+        self.frame_col = col       # 100 by default
         self.frame_y = y           # frame coordinates y, 2 by default
         self.frame_x = x           # frame coordinates x, 5 by default
         self.text_line = 90        # line size
@@ -31,7 +46,7 @@ class Textframe(object):
         self.current_para_idx = 0  # current sentence index
         self.current_sentences = None # current sentences
         self.firstrow_idx = 0      # number of first row to print
-        self.offset_x = 4          # text margin size to the left and right side of frame
+        self.offset_x = 4          # text margin size to the left and left side of frame
         self.offset_y = 2          # text margin size to the top and bottom of frame
         self.indent = 4            # first sentences indent
         self.window_size = self.frame_line - self.offset_y -1      # shift window size
@@ -53,9 +68,6 @@ class Textframe(object):
 
     def getParagragh(self):
         return self.__paragraphs
-
-    # def register(self,func):
-    #     self.enterKey = func
 
     def setText(self,texts):
         # reset parameters
@@ -196,22 +208,8 @@ class Textframe(object):
         revised_box.getWin().attroff(border_color2)
         revised_box.getWin().refresh()
 
-def readTXT(txt):
-    '''
-    readtxt() function
-    1. read txt from a txt file.
-    2. chop the txt into sentences in paragraphs
-    3. return a list of paragraphs and sentenece like:
-                        [
-                         [["para1.sent1",y,x,color]["para1.sent2",y,x,color]]
-                        ,[["para2.sent1",y,x,color]]
-                        ,[["para3.sent1",y,x,color],[para3.sent2",y,x,color],[para3.sent3",y,x,color]]
-                        ]
-
-    '''
-    paragraph = []
-    nlp = spacy.load("en_core_web_sm")
-    f = open('sample.txt', mode='r')
+def readTXT(file):
+    f = open(file, mode='r')
     texts = f.readlines()
     f.close()
     return texts
@@ -227,10 +225,10 @@ def conformChange():
 
 def refineSentence(id):
     paragraph = txt_box.getParagragh()
-    tokens = rw.rewriter(paragraph[txt_box.current_para_idx][txt_box.current_sent_idx][0], σ, k)
+    tokens = gen.rewriter(paragraph[txt_box.current_para_idx][txt_box.current_sent_idx][0], σ, k)
     sents = []
     for i in torch.arange(len(tokens["input_ids"])):
-        sent = str(rw.tokenizer.decode(tokens["input_ids"][i],skip_special_tokens=True))
+        sent = str(gen.tokenizer.decode(tokens["input_ids"][i],skip_special_tokens=True))
         sent = sent + "\n"
         sents.append(sent)
 
@@ -250,7 +248,7 @@ def saveChange():
             sents = sents + sent[0]
         sents = sents + "\n"
         txt.append(sents)
-    filename =  "revised_"+txtfile
+    filename =  "revised_"+config.get("TEXT","input_file")
     f = open(filename,'w')
     f.writelines(txt)
     f.flush()
@@ -265,10 +263,16 @@ def undoChange():
             break
 
 def main(stdscr):
-    global r_pos,max_line,window_size,screen,txt_box,revised_box
-    # Clear screen
+    global config,screen,txt_box,revised_box,σ,k,batch
+    # read config file
+    file_path = os.path.join(os.path.abspath("."), "rewriter.ini")
+    config.read(file_path)
+    σ = config.get("MODEL_PARAM",σ)
+    k = config.get("MODEL_PARAM",k)
+    batch = config.get("MODEL_PARAM",batch)
+    # set tbe screen
     screen = stdscr
-    # initialize
+    # curses initialization
     curses.use_default_colors()
     curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_RED)
     curses.init_pair(2, curses.COLOR_CYAN, -1)
@@ -276,19 +280,27 @@ def main(stdscr):
     curses.init_pair(4, curses.COLOR_BLUE, -1)
     curses.curs_set(0)
     # create text frame to display original sentences
-    txt_box = Textframe(stdscr)
-    txt_box.enterKey =  refineSentence
+    txt_box = Textframe(stdscr,int(config.get('GUI','txtbox_line'))
+                        ,int(config.get('GUI','txtbox_col'))
+                        ,int(config.get('GUI','txtbox_y'))
+                        ,int(config.get('GUI','txtbox_x'))
+                        ,int(config.get('GUI','txtbox_id')))
+    txt_box.enterKey = refineSentence
     txt_box.alt_s    = saveChange
     txt_box.u        = undoChange
     # create text frame to display revised sentences width=200,height=10,y=26,x=5
-    revised_box = Textframe(stdscr, 10, 100, 26, 5, 1)
+    revised_box = Textframe(stdscr,int(config.get('GUI','revisedbox_line'))
+                        ,int(config.get('GUI','revisedbox_col'))
+                        ,int(config.get('GUI','revisedbox_y'))
+                        ,int(config.get('GUI','revisedbox_x'))
+                        ,int(config.get('GUI','revisedbox_id')))
     revised_box.indent = 0
     revised_box.enterKey = refineSentence
     revised_box.alt_s = conformChange
-    txt_box.setText(readTXT(txtfile))
+    txt_box.setText(readTXT(config.get('TEXT','input_file')))
     txt_box.calcPosition(0)
     txt_box.printText()
-    #revised_box.register(fun2)
+    # revised_box.register(fun2)
     txt_box.selectSentence()
 
 if __name__=='__main__':
