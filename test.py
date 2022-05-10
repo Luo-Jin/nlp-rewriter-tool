@@ -99,12 +99,14 @@ lyle@digitalfoo.net
 
 A simple demo that uses curses to scroll the terminal.
 """
-from configparser import ConfigParser
-import os
 
-conn = ConfigParser()
-file_path = os.path.join(os.path.abspath("."),"rewriter.ini")
-if not os.path.exists(file_path):
-    raise FileNotFoundError("The file does not exit")
-conn.read(file_path)
-print(conn.get('PRE_TRAINED','bert_vocal'))
+import curses
+from curses import wrapper
+def main(screen):
+    pad = curses.newpad(4,30)
+    pad.box()
+    pad.refresh()
+
+
+if __name__ == "__main__":
+    wrapper(main)

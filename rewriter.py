@@ -102,7 +102,8 @@ class Textframe(object):
             if c == curses.KEY_UP:
                 self.firstrow_idx = np.max([(self.firstrow_idx - 1), 0])
             elif c == curses.KEY_DOWN:
-                self.firstrow_idx = np.min([(self.firstrow_idx + 1),np.max([self.row_num - self.window_size + self.offset_y, 0])])
+                self.firstrow_idx = np.min([(self.firstrow_idx + 1)
+                                               ,np.max([self.row_num - self.window_size + self.offset_y, 0])])
             elif c == curses.KEY_RIGHT:
                 self.calcPosition(1)
             elif c == curses.KEY_LEFT:
@@ -197,7 +198,7 @@ class Textframe(object):
                            , curses.color_pair(color1))
 
         screen.addstr(y1,x1
-                           , "Three new sentences will be generated: σ={} and k={}".format(σ, k)
+                           , "{} new sentence(s) will be generated here with σ={} and k={}".format(batch,σ, k)
                            , curses.color_pair(color2))
 
         screen.refresh()

@@ -34,7 +34,6 @@ import curses
 import rewriter as rw
 
 
-
 # render the screen
 screen = curses.initscr()
 t = screen.getmaxyx()
