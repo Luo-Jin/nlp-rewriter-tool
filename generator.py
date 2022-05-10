@@ -30,18 +30,15 @@ import getopt
 import random
 import torch
 import copy
-import spacy
 import curses
-from curses import wrapper
 
 
 # cache_dir = 'GloVe6B5429'
 # glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
 # download bert embeddings
-tokenizer = BertTokenizer.from_pretrained('Bert/vocabulary')
-model = BertForMaskedLM.from_pretrained("Bert/model/maskedLM")
+tokenizer = BertTokenizer.from_pretrained('Bert/vocabulary/')
+model = BertForMaskedLM.from_pretrained("Bert/model/maskedLM/")
 word_piece_embeddings = torch.load('sig_sml1_e1000_b5000_l0.5_weight.pt').t()
-# stanza.download('en')
 curses.initscr()
 progress_bar = curses.newwin(1, 100, 23, 35)
 progress_bar.box()

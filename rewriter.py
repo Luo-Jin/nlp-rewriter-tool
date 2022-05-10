@@ -9,7 +9,7 @@
 a GUI for the rewriter tool
 '''
 
-import curses, traceback
+import curses
 from curses import wrapper
 from configparser import ConfigParser
 import spacy
@@ -267,9 +267,9 @@ def main(stdscr):
     # read config file
     file_path = os.path.join(os.path.abspath("."), "rewriter.ini")
     config.read(file_path)
-    σ = config.get("MODEL_PARAM",σ)
-    k = config.get("MODEL_PARAM",k)
-    batch = config.get("MODEL_PARAM",batch)
+    σ = float(config.get("MODEL_PARAM",'σ'))
+    k = float(config.get("MODEL_PARAM",'k'))
+    batch = config.get("MODEL_PARAM",'batch')
     # set tbe screen
     screen = stdscr
     # curses initialization
