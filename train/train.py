@@ -54,9 +54,9 @@ def train(epoch:int,batch:int,lr:float):
     dataloader = tud.DataLoader(dt, batch_size=batch, shuffle=True, num_workers=48,drop_last=True)
 
     # define the nn model and optimizer and loss function
-    linear = nn.Linear(30000, 300, bias=False)
+    linear = nn.Linear(dt._tokenizer.vocab_size, 300, bias=False)
     opt = torch.optim.SGD(lr=lr, momentum=0.5, params=linear.parameters())
-    scheduler = torch.optim.lr_scheduler.StepLR( opt, step_size=1000, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=1000, gamma=0.5)
     linear.weight.data.zero_()
     for word, id in dt._tokenizer.vocab.items():
         if word.lower() in dt._glove.itos:
