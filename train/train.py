@@ -56,10 +56,10 @@ def train(epoch:int,batch:int,lr:float):
     linear = nn.Linear(dt._tokenizer.vocab_size, 300, bias=False)
     opt = torch.optim.SGD(lr=lr, momentum=0.5, params=linear.parameters())
     scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=1000, gamma=0.5)
-    '''linear.weight.data.zero_()
+    linear.weight.data.zero_()
     for word, id in dt._tokenizer.vocab.items():
         if word.lower() in dt._glove.itos:
-            linear.weight.data[:, id] = dt._glove.vectors[dt._glove.stoi[word.lower()]]'''
+            linear.weight.data[:, id] = dt._glove.vectors[dt._glove.stoi[word.lower()]]
     loss_func = torch.nn.L1Loss(reduction='mean')
     loss_his = []
 
