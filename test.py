@@ -24,12 +24,6 @@
 #     plt.ylabel('loss (mean)')
 # plt.subplots_adjust(wspace=0.5,hspace=0.5)
 # plt.show()
-import  time
-import curses
-import curses.panel as panel
-import curses, traceback
-from curses import wrapper
-import spacy
 import torch
 import numpy as np
 # line_size = 90
@@ -101,5 +95,6 @@ A simple demo that uses curses to scroll the terminal.
 """
 from transformers import BertTokenizer
 import torchtext.vocab as vocab
-glove = vocab.GloVe(name='6B', dim=300, cache='train/GloVe6B5429/')
-print(glove.itos)
+_glove = vocab.GloVe(name='6B', dim=300, cache='train/GloVe6B5429')
+x = _glove.vectors[4]
+print (x)

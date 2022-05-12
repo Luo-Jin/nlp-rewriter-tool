@@ -45,7 +45,7 @@ class WordEmbeddingDataset(tud.Dataset):
         for tok_id in self._tokenizer.convert_tokens_to_ids(
                 self._tokenizer.tokenize(word)):
             Tw[tok_id] = 1
-        return torch.tensor(Tw).float(), torch.tensor(Ew).float()
+        return Tw, torch.tensor(Ew).float()
 
 
 def train(epoch:int,batch:int,lr:float):
