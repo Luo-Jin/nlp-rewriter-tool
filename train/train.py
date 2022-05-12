@@ -71,6 +71,10 @@ def train(epoch:int,batch:int,lr:float):
         for step,(x,y) in enumerate(dataloader):
             y_hat = linear(x)
             loss = loss_func(y_hat,y)
+            print(x)
+            print(y)
+            print(y_hat)
+            input()
             loss_his.append(loss.detach().cpu().numpy())
             opt.zero_grad()
             loss.backward()
