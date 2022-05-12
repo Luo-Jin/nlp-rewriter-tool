@@ -12,7 +12,6 @@ a GUI for the rewriter tool
 import curses
 from curses import wrapper
 from configparser import ConfigParser
-import spacy
 import torch
 import numpy as np
 import copy
@@ -27,7 +26,6 @@ config.read(file_path)
 screen = None
 txt_box = None
 revised_box = None
-nlp = spacy.load("en_core_web_sm")
 # initialize sentences list
 replaced_sents = []
 # model parameters
@@ -86,7 +84,7 @@ class Textframe(object):
         for i in np.arange(len(texts)):
             p = texts[i]
             p = p[0:len(p) - 1]
-            doc = nlp(p)
+            doc = gen.nlp(p)
             sents = []
             j = 0
             for sent in doc.sents:

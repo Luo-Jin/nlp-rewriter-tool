@@ -31,6 +31,7 @@ import random
 import torch
 import copy
 import curses
+import spacy
 import rewriter as rw
 
 
@@ -45,6 +46,7 @@ progress_bar.refresh()
 tokenizer = BertTokenizer.from_pretrained(rw.config.get("PRE_TRAINED","bert_vocal"))
 model = BertForMaskedLM.from_pretrained(rw.config.get("PRE_TRAINED","bert_model"))
 word_piece_embeddings = torch.load(rw.config.get("PRE_TRAINED","embeddings")).t()
+nlp = spacy.load("en_core_web_sm")
 progress_bar.clear()
 progress_bar.mvwin(23,35)
 progress_counter = 0
@@ -142,7 +144,7 @@ def penforce(batch,pos,org_tokens,tokens,k,σ):
     return Penforce
 
 def plm(pos,tokens):
-    # replace choosen word with [MASK]
+    # replace selected word with [MASK]
     tokens["input_ids"][:, pos[0]] = tokenizer.mask_token_id
     logits = model(**tokens)
     logits = logits.logits
