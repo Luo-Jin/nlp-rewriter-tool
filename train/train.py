@@ -60,7 +60,7 @@ def train(epoch:int,batch:int,lr:float):
     for word, id in dt._tokenizer.vocab.items():
         if word.lower() in dt._glove.itos:
             linear.weight.data[:, id] = dt._glove.vectors[dt._glove.stoi[word.lower()]]
-
+    loss_func = torch.nn.L1Loss(reduction='mean')
     loss_his = []
 
     # training
@@ -69,8 +69,8 @@ def train(epoch:int,batch:int,lr:float):
     for epoch in range(EPOCH):
         # print('Epoch: ', epoch)
         for step,(x,y) in enumerate(dataloader):
-            output = linear(x)
-            loss = ((output - y).abs()).sum(dim=1).mean(dim=0)
+            y_hat = linear(x)
+            loss = loss_func(y_hat,y)
             loss_his.append(loss.detach().cpu().numpy())
             opt.zero_grad()
             loss.backward()
@@ -83,7 +83,10 @@ def train(epoch:int,batch:int,lr:float):
             time1 = time2
             torch.save(loss_his, 'loss.pt')
             torch.save(linear.weight.data.cpu().numpy(), 'weight.pt')
-            print('epoch:{},runtime:{},loss:{}'.format(epoch,interval,np.mean(loss_his[int(epoch*len(dt)/batch):int((epoch+1)*len(dt)/batch)-1])))
+            print('epoch:{},runtime:{},loss:{}'
+                  .format(epoch
+                          ,interval
+                          ,np.mean(loss_his[int(epoch*len(dt)/batch):int((epoch+1)*len(dt)/batch)-1])))
 
 def main():
     arg_epoch = None
