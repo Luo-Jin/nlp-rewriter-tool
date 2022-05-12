@@ -71,12 +71,12 @@ def train(epoch:int,batch:int,lr:float):
         for step,(x,y) in enumerate(dataloader):
             y_hat = linear(x)
             loss = loss_func(y_hat,y)
-            print(loss)
             loss_his.append(loss.detach().cpu().numpy())
             opt.zero_grad()
             loss.backward()
             opt.step()
             scheduler.step()
+            print(loss.data.numpy())
 
         if  np.mod(epoch,10) == 0:
             time2 = time.time()
