@@ -97,4 +97,4 @@ from transformers import BertTokenizer
 import torchtext.vocab as vocab
 _glove = vocab.GloVe(name='6B', dim=300, cache='train/GloVe6B5429')
 x = _glove.vectors[4]
-print (x)
+print (type(x))

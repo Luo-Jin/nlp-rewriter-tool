@@ -40,11 +40,11 @@ class WordEmbeddingDataset(tud.Dataset):
     def __getitem__(self, idx):
         Ew = self._glove.vectors[idx]
         word = self._glove.itos[idx].lower()
-        Tw = np.zeros(self._tokenizer.vocab_size)
+        Tw = torch.FloatTensor(self._tokenizer.vocab_size)
         for tok_id in self._tokenizer.convert_tokens_to_ids(
                 self._tokenizer.tokenize(word)):
             Tw[tok_id] = 1
-        return Tw, torch.tensor(Ew).float()
+        return Tw, Ew
 
 
 def train(epoch:int,batch:int,lr:float):
