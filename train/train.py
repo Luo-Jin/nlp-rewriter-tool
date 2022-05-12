@@ -15,7 +15,6 @@ between the BERT 30k vocabs and GloVe 400k vocabs.
 it simply use a shallow NN with just one Linear layer to minimize the
 L1 loss of |E(w) − T (w)E′|. not sure if need a activation function or not ?
 the SGD optimizer was used to train this model with batch size 5000 and learning rate 0.01.
-
 '''
 import torch
 import torch.utils.data as tud
