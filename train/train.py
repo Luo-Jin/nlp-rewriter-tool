@@ -47,28 +47,8 @@ class WordEmbeddingDataset(tud.Dataset):
             Tw[tok_id] = 1
         return torch.tensor(Tw).float(), torch.tensor(Ew).float()
 
-class EmbeddingModel(nn.Module):
-    def __init__(self, vocab_size, embed_size):
-        super(EmbeddingModel,self).__init__()
-        self.vocab_size = vocab_size  # 30k number of tokens in BERT
-        self.embed_size = embed_size  # 300
-        self.linear = nn.Linear(vocab_size,embed_size,bias=False)
-        #self.sigmod = nn.Sigmoid()
-        self.weight = self.linear.weight
-    def __getweight__(self):
-        return self.weight
-
-    def forward(self, x):
-        out = self.linear(x)
-        #out = self.sigmod(out)
-        return out
 
 def train(epoch:int,batch:int,lr:float):
-    # prepare the input
-    #Tw = torch.load('word_piece_co.pt') # 400k x 30k
-    #Tw = torch.randint(low=0,high=1,size=[400,300])
-    #E = vocab.GloVe(name='6B', dim=300, cache=cache_dir).vectors # 400k x 300
-    #E = torch.rand(size=[400,30])
     # prepare dataloader
     dt = WordEmbeddingDataset()
     dataloader = tud.DataLoader(dt, batch_size=batch, shuffle=True, num_workers=48,drop_last=True)
@@ -78,12 +58,10 @@ def train(epoch:int,batch:int,lr:float):
     opt = torch.optim.SGD(lr=lr, momentum=0.5, params=linear.parameters())
     scheduler = torch.optim.lr_scheduler.StepLR( opt, step_size=1000, gamma=0.5)
     linear.weight.data.zero_()
-    cc = 0
-    for w, wid in dt._tokenizer.vocab.items():
-        if w.lower() in dt._glove.itos:
-            cc += 1
-            linear.weight.data[:, wid] = torch.tensor(
-                dt._glove.vectors[dt._glove.stoi[w.lower()]])
+    for word, id in dt._tokenizer.vocab.items():
+        if word.lower() in dt._glove.itos:
+            linear.weight.data[:, id] = torch.tensor(
+                dt._glove.vectors[dt._glove.stoi[word.lower()]])
 
     loss_his = []
 
