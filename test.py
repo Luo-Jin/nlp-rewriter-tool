@@ -99,14 +99,7 @@ lyle@digitalfoo.net
 
 A simple demo that uses curses to scroll the terminal.
 """
-
-import curses
-from curses import wrapper
-def main(screen):
-    pad = curses.newpad(4,30)
-    pad.box()
-    pad.refresh()
-
-
-if __name__ == "__main__":
-    wrapper(main)
+from transformers import BertTokenizer
+import torchtext.vocab as vocab
+glove = vocab.GloVe(name='6B', dim=300, cache='train/GloVe6B5429/')
+print(glove.itos)
