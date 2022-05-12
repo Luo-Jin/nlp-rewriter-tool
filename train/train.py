@@ -74,6 +74,7 @@ def train(epoch:int,batch:int,lr:float):
             print(x)
             print(y)
             print(y_hat)
+            print(loss)
             input()
             loss_his.append(loss.detach().cpu().numpy())
             opt.zero_grad()
