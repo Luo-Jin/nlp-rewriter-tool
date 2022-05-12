@@ -59,8 +59,7 @@ def train(epoch:int,batch:int,lr:float):
     linear.weight.data.zero_()
     for word, id in dt._tokenizer.vocab.items():
         if word.lower() in dt._glove.itos:
-            linear.weight.data[:, id] = torch.tensor(
-                dt._glove.vectors[dt._glove.stoi[word.lower()]])
+            linear.weight.data[:, id] = dt._glove.vectors[dt._glove.stoi[word.lower()]]
 
     loss_his = []
 
