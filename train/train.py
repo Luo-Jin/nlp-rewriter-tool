@@ -70,7 +70,7 @@ def train(epoch:int,batch:int,lr:float):
     time1 = time.time()
     for epoch in range(EPOCH):
         # print('Epoch: ', epoch)
-        for step,(y,x) in enumerate(dataloader):
+        for step,(x,y) in enumerate(dataloader):
             output = linear(x)
             loss = ((output - y).abs()).sum(dim=1).mean(dim=0)
             loss_his.append(loss.detach().cpu().numpy())
