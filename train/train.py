@@ -81,7 +81,6 @@ def train(epoch:int,batch:int,lr:float):
             loss.backward()
             opt.step()
             scheduler.step()
-            print(loss.data.numpy())
 
         if  np.mod(epoch,10) == 0:
             time2 = time.time()
