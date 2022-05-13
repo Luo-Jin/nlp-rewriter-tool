@@ -87,14 +87,30 @@ import numpy as np
 
 # !/usr/bin/env python
 
-"""
-Lyle Scott, III
-lyle@digitalfoo.net
+# import curses
+# from curses import textpad as tp
+# from curses import wrapper
+#
+# def main(screen):
+#     curses.use_default_colors()
+#     win1 = curses.newwin(5,50,10,45)
+#     win1.box()
+#     box = tp.Textbox(win1, True)
+#     #tp.rectangle(win1,2,5,3,10)
+#     while True:
+#         c = win1.getch()
+#         if c == 113:
+#             break
+#         elif c == 10:
+#             box.edit()
+#             screen.addstr(1,1,box.gather())
+#         win1.refresh()
+# if __name__ == "__main__":
+#     wrapper(main)
 
-A simple demo that uses curses to scroll the terminal.
-"""
-from transformers import BertTokenizer
-import torchtext.vocab as vocab
-_glove = vocab.GloVe(name='6B', dim=300, cache='train/GloVe6B5429')
 
-print (_glove.itos)
+l = [[3,0,0,0],[4,3,4,4]]
+
+print( max([ i[0] if i[2] == 4 else 0 for i in l]))
+
+

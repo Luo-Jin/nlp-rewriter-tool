@@ -49,7 +49,7 @@ class Textframe(object):
         self.offset_x = 4          # text margin size to the left and left side of frame
         self.offset_y = 2          # text margin size to the top and bottom of frame
         self.indent = 4            # first sentences indent
-        self.window_size = self.frame_line - self.offset_y -1      # shift window size
+        self.window_size = self.frame_line - self.offset_y * 2     # shift window size
         self.para_num = 0          # number of paragraphs
         self.sent_num = 0          # number of sentences
         self.screen = stdscr       # father window
@@ -62,6 +62,7 @@ class Textframe(object):
         self.enterKey = None       # process enter key strike,
         self.alt_s = None          # process alt+s,
         self.u =None               # process 'u' strike
+        self.select_sent_y = 0
 
     def getWin(self):
         return self.__win
@@ -98,10 +99,9 @@ class Textframe(object):
         while True:
             c = self.__win.getch()
             if c == curses.KEY_UP:
-                self.firstrow_idx = np.max([(self.firstrow_idx - 1), 0])
+                self.calcPosition(-1)
             elif c == curses.KEY_DOWN:
-                self.firstrow_idx = np.min([(self.firstrow_idx + 1)
-                                               ,np.max([self.row_num - self.window_size + self.offset_y, 0])])
+                self.calcPosition(1)
             elif c == curses.KEY_RIGHT:
                 self.calcPosition(1)
             elif c == curses.KEY_LEFT:
@@ -122,12 +122,13 @@ class Textframe(object):
             self.printText()
 
     def calcPosition(self,step):
+
         # update selected sentences position and color
         self.select_idx = self.select_idx + step
         if self.select_idx > self.sent_num - 1:
-            self.select_idx = 0
-        if self.select_idx < 0:
             self.select_idx = self.sent_num - 1
+        if self.select_idx < 0:
+            self.select_idx = 0
         x = self.indent
         y = 0
         # calculate the sentences to display
@@ -159,15 +160,28 @@ class Textframe(object):
         self.current_sentences = sents
 
     def printText(self):
-        # print the sentences
         self.__win.clear()
-        for i in np.arange(len(self.current_sentences)):
-            if self.firstrow_idx <= self.current_sentences[i][0] and self.current_sentences[i][0] <= self.firstrow_idx + self.window_size - self.offset_y:
-                self.__win.addstr(self.current_sentences[i][0] - self.firstrow_idx + self.offset_y
-                                  , self.current_sentences[i][1] + self.offset_x
-                                  , str(self.current_sentences[i][2])
-                                  ,curses.color_pair(self.current_sentences[i][3]))
-            self.row_num = self.current_sentences[i][0]
+        self.row_num = np.max([sent[0] for sent in self.current_sentences])
+        select_sent_max_y = max([sent[0] if sent[3] == 1 else 0 for sent in self.current_sentences])
+        select_sent_min_y = 0
+        for sent in self.current_sentences:
+            if sent[3] == 1:
+                select_sent_min_y = sent[0]
+                break
+
+        if select_sent_max_y - self.firstrow_idx + 1 > self.window_size :
+            self.firstrow_idx = select_sent_max_y - self.window_size +1
+
+        if select_sent_min_y < self.firstrow_idx:
+            self.firstrow_idx = select_sent_min_y
+
+        for sent in self.current_sentences:
+            if self.firstrow_idx <= sent[0] and sent[0] <= self.firstrow_idx + self.window_size -1:
+                self.__win.addstr(sent[0] + self.offset_y - self.firstrow_idx
+                                          , sent[1] + self.offset_x
+                                          , str(sent[2])
+                                          ,curses.color_pair(sent[3]))
+
         self.updateStatus()
         self.__win.refresh()
 
