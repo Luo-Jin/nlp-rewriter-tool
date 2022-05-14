@@ -25,6 +25,7 @@ End loop
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
 from os import system, name
+import re
 import sys
 import getopt
 import random
@@ -33,6 +34,7 @@ import copy
 import curses
 import spacy
 import rewriter as rw
+import stanza
 
 
 # render the screen
@@ -45,7 +47,8 @@ progress_bar.refresh()
 # load the embeddings
 tokenizer = BertTokenizer.from_pretrained(rw.config.get("PRE_TRAINED","bert_vocal"))
 model = BertForMaskedLM.from_pretrained(rw.config.get("PRE_TRAINED","bert_model"))
-word_piece_embeddings = torch.load(rw.config.get("PRE_TRAINED","embeddings")).t()
+word_piece_embeddings = torch.load(rw.config.get("PRE_TRAINED","embeddings"))
+en_nlp = stanza.Pipeline('en',dir=rw.config.get("PRE_TRAINED","stanza_model"),processors='tokenize,ner')
 nlp = spacy.load("en_core_web_sm")
 progress_bar.clear()
 progress_bar.mvwin(23,35)
@@ -78,12 +81,12 @@ def main():
     k = 0.1 if arg_enf is None else float(arg_enf)
 
     # read text from specific txt file
-    texts = readtxt(arg_txt)
+    texts = readTXT(arg_txt)
     print(texts)
-    screen_clear()
+    clearScreen()
     print("\033[1;33mThe original sentence is :\033[0m")
     print("\033[7m\n{}\n\033[0m".format(texts))
-    tokens = rewriter(texts, σ, k)
+    tokens = getSentence(texts, σ, k)
     print("\033[1;33mThe sentence is revised with smooth parameter k={} "
           "and similarity rate σ={} :\033[0m".format(k,σ))
     for i in torch.arange(len(tokens["input_ids"])):
@@ -93,17 +96,14 @@ def main():
                       , tokenizer.decode(tokens["input_ids"][i], skip_special_tokens=True)))
 
 
-def readtxt(txt):
+def readTXT(txt):
     f = open(txt, mode='r')
     texts = f.readline()
-    #nlp = spacy.load("en_core_web_sm")
-    #doc = nlp(texts[0])
-    #sents = [[sent.text,0,0,0] for sent in doc.sents]
     f.close()
     return texts
 
 # define our clear function
-def screen_clear():
+def clearScreen():
     if name == 'nt':
         _ = system('cls')
         # for mac and linux(here, os.name is 'posix')
@@ -111,7 +111,7 @@ def screen_clear():
         _ = system('clear')
         # print out some text
 
-def update_progress(progress):
+def updateProgress(progress):
     rangex = (50 / float(100)) * progress
     pos = int(rangex)
     display = '#'
@@ -152,20 +152,33 @@ def plm(pos,tokens):
     Plm = softmax[:, pos[0]]
     return Plm
 
-def rewriter(txt,σ=0.975,k=0.1,batch=1):
+
+def getSentence(txt,σ=0.975,k=0.1,batch=1):
     global progress_counter
     # set minibatch size of this task, determine how many sentences will be created in one call.
     progress_bar.clear()
     progress_bar.box()
     text = [txt] * batch
-    org_tokens = tokenizer(text, return_tensors="pt")
-    special_tokens = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0, "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,
-                    ".": 0, "?": 0, "/": 0, ">": 0, "<": 0, "{": 0, "}": 0}
+    org_tokens = tokenizer(text, return_tensors="pt"
+                           ,return_token_type_ids=False
+                           ,return_attention_mask=False
+                           )
+    special_tokens = {"[CLS]": 0, "[UNK]": 0, "[MASK]": 0, "[SEP]": 0, "[PAD]": 0
+        , "'": 0, '"': 0, ";": 0, ":": 0, ",": 0,".": 0, "?": 0
+        , "/": 0, ">": 0, "<": 0, "{": 0, "}": 0,"-":0,"+":0,"=":0,"_":0
+        , "!":0,"@":0,"#":0,"$":0,"%":0,"^":0,"&":0,"*":0,"(":0,")":0}
     special_tokens = {k:tokenizer.convert_tokens_to_ids(k) for k,v in special_tokens.items()}
     # determine all replaceable positions in the sentence.
     mask_pos = []
-    for i in range(org_tokens["input_ids"][0].size(0)):
-        if org_tokens["input_ids"][0][i] not in special_tokens.values():
+    for i in range(len(org_tokens["input_ids"][0])):
+        id = org_tokens["input_ids"][0][i]
+        w = tokenizer.ids_to_tokens[id.item()]
+        re.fullmatch('##[0-9]*', w)  # determine if it is a number
+        doc = en_nlp(w)  # determine if it is an entity
+        if id not in special_tokens.values() \
+                and not w.isdigit() \
+                and re.fullmatch('##[0-9]*', w) == None \
+                and len(doc.entities) == 0:
             mask_pos.append(i)
     # iteratively replace the mask words
     i = 1
@@ -192,11 +205,8 @@ def rewriter(txt,σ=0.975,k=0.1,batch=1):
         index = [i for i in range(len(sample_idx))]
         random.shuffle(index)
 
-        # print ("origin:{},ppl:{}".format(tokenizer.decode(replaced_word_idx)
-        #                                         ,tokenizer.decode(sample_idx)))
-        # replace the MASK with proposed words
         tokens["input_ids"][:,pos[0]] = sample_idx
-        update_progress(progress_counter)
+        updateProgress(progress_counter)
     progress_counter = 0
     return tokens
 

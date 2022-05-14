@@ -240,7 +240,7 @@ def conformChange():
 
 def refineSentence(id):
     paragraph = txt_box.getParagragh()
-    tokens = gen.rewriter(paragraph[txt_box.current_para_idx][txt_box.current_sent_idx][0], σ, k)
+    tokens = gen.getSentence(paragraph[txt_box.current_para_idx][txt_box.current_sent_idx][0], σ, k)
     sents = []
     for i in torch.arange(len(tokens["input_ids"])):
         sent = str(gen.tokenizer.decode(tokens["input_ids"][i],skip_special_tokens=True))

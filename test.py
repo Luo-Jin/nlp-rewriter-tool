@@ -1,116 +1,40 @@
-#import stanza
-#stanza.download('en',model_dir='stanza')       # This downloads the English models for the neural pipeline
-# nlp = stanza.Pipeline('en',model_dir='stanza',processors='tokenize,ner') # This sets up a default neural pipeline in English
-# doc = nlp("Auckland")
-# print(*[f'token: {ent.text}\ttype: {ent.type}' for sent in doc.sentences for ent in sent.ents], sep='\n')
-
-
-# from matplotlib  import pyplot as plt
-# import torch
-# l = {}
-# #x = torch.tensor([[torch.from_numpy(t) for t  in torch.load('test/sig_l1_e1000_b5000_l0.5.pt')]])
-# l['L1Loss, Sigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/sig_l1_e1000_b5000_l0.5.pt')])
-# l['L1Loss, noSigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/nosig_l1_e1000_b5000_l0.5.pt')])
-# l['SmoothL1Loss, Sigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/sig_sml1_e1000_b5000_l0.5.pt')])
-# l['SmoothL1Loss, noSigmoid'] = torch.tensor([torch.from_numpy(t) for t  in torch.load('test/nosig_sml1_e1000_b5000_l0.5.pt')])
-# i = 0
-# for k,v in l.items():
-#     i = i + 1
-#     v = v.view(int(v.size(0) / 80), 80)
-#     ax = plt.subplot(220+i)
-#     ax.set_title(k)
-#     plt.plot(torch.arange(v.size(0)),torch.mean(v,dim=-1))
-#     plt.xlabel('epoch')
-#     plt.ylabel('loss (mean)')
-# plt.subplots_adjust(wspace=0.5,hspace=0.5)
-# plt.show()
 import torch
-import numpy as np
-# line_size = 90
-# row_size = 80
-# s_pos = 0
-# y = 0
-# x = 0
-# pos = 1
-# nlp = spacy.load("en_core_web_sm")
-# f = open('sample.txt', mode='r')
-# texts = f.readlines()
-# txt = []
-# for i in np.arange(len(texts)):
-#     p = texts[i]
-#     p = p[0:len(p)-1]
-#     doc = nlp(p)
-#     sents = []
-#     for sent in doc.sents:
-#         sents.append([sent,0,0,0])
-#     txt.append(sents)
-# f.close()
-#
-# s_pos = s_pos + pos
-# print(txt)
-# txt1=[]
-# for p in txt:
-#     for s in p:
-#         txt1.append(s)
-# print(txt1)
-# if s_pos > len(sents[:][:]) - 1:
-#     s_pos = 0
-# if s_pos < 0:
-#     s_pos = 0
-# sents[0][s_pos][1] = 1
-# sents[0][s_pos][1] = 2
-# offset_x = 4
-# offset_y = 1
-# for p in txt:
-#     for i in np.arange(len(p)):
-#         total_size = x + len(p[i][0])
-#         l = [line_size] * int(total_size / line_size)
-#         l.append(total_size % line_size)
-#         str_len = len(p[i][0])
-#         st = 0
-#         for j in np.arange(len(l)):
-#             et = min((l[j] - x), str_len) + st
-#             if j == 0:
-#                 p[i][2] = y
-#                 p[i][3] = x
-#             print("string :{},st:{},et:{},y:{},x:{},color:{}".format(p[i][0],st,et,y+offset_y,x+offset_x,p[i][1]))
-#             #txt_box.addstr(y + offset_y, x + offset_x, p[i][0][st:et], curses.color_pair(p[i][1]))
-#             x = et - st + x if et - st + x < line_size else 0
-#             if x == 0:
-#                 y = y + 1
-#             str_len = str_len - et + st
-#             st = et
-#     y = y+1
-#     x = 0
 
-# Curses modules
+import stanza
+from transformers import BertTokenizer
+import re
+tokenizer = BertTokenizer.from_pretrained("Bert/vocabulary")
+# stanza.download('en',model_dir='stanza')       # This downloads the English models for the neural pipeline
+txt  = "Twenty state or territorial democratic parties intend to apply to hold early presidential nominating contests in 2024, " \
+       "a DNC official told CNN Saturday, as the party reevaluates its process of selecting nominees."
+tokens = tokenizer(txt, return_tensors="pt",return_token_type_ids=False,return_attention_mask=False,return_special_tokens_mask=False)
+en_nlp = stanza.Pipeline('en',model_dir='stanza',processors='tokenize,ner') # This sets up a default neural pipeline in English
+#doc = en_nlp()
 
-# !/usr/bin/env python
-
-# import curses
-# from curses import textpad as tp
-# from curses import wrapper
-#
-# def main(screen):
-#     curses.use_default_colors()
-#     win1 = curses.newwin(5,50,10,45)
-#     win1.box()
-#     box = tp.Textbox(win1, True)
-#     #tp.rectangle(win1,2,5,3,10)
-#     while True:
-#         c = win1.getch()
-#         if c == 113:
-#             break
-#         elif c == 10:
-#             box.edit()
-#             screen.addstr(1,1,box.gather())
-#         win1.refresh()
-# if __name__ == "__main__":
-#     wrapper(main)
+# for t in tokens["input_ids"][0]:
+#     w = tokenizer.ids_to_tokens[t.item()]
+#     doc=en_nlp(w)
+#     print(doc.entities)
+doc = en_nlp(txt)
+words = doc.to_dict()[0]
+# ids = {'input_ids':torch.tensor([[tokenizer.convert_tokens_to_ids(w['text']) for w in words]])}
+# ids['input_ids'] = torch.cat((torch.tensor([[101]]),ids['input_ids'],torch.tensor([[102]])),dim=-1)
+# print(tokenizer.convert_ids_to_tokens(tokens['input_ids'][0]))
+mask_pos = []
+for i in range(len(tokens["input_ids"][0])):
+        id = tokens["input_ids"][0][i]
+        w = tokenizer.ids_to_tokens[id.item()]
+        re.fullmatch('##[0-9]*', w)  # determine if it is a number
+        doc = en_nlp(w)  # determine if it is an entity
+        if  len(doc.entities) == 0:
+               mask_pos.append(i)
+        print(mask_pos)
 
 
-l = [[3,0,0,0],[4,3,4,4]]
 
-print( max([ i[0] if i[2] == 4 else 0 for i in l]))
-
-
+# print(ids)
+# print(tokenizer.decode(ids['input_ids'][0]))
+# print(tokens)
+# print(tokenizer.decode(tokens['input_ids'][0]))
+# print([w['text'] for w in words])
+# print(tokenizer.convert_tokens_to_ids('cnn'.lower()))
