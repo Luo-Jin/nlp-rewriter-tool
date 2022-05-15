@@ -2,8 +2,11 @@ import torch
 
 import stanza
 from transformers import BertTokenizer
+import torchtext.vocab as vocab
 import re
-tokenizer = BertTokenizer.from_pretrained("Bert/vocabulary")
+cache_dir = 'train/GloVe6B5429'
+glove = vocab.GloVe(name='840B', dim=300, cache=cache_dir)
+tokenizer = BertTokenizer.from_pretrained("bert-base-cased")
 # stanza.download('en',model_dir='stanza')       # This downloads the English models for the neural pipeline
 txt  = "Twenty state or territorial democratic parties intend to apply to hold early presidential nominating contests in 2024, " \
        "a DNC official told CNN Saturday, as the party reevaluates its process of selecting nominees."
@@ -28,7 +31,8 @@ for i in range(len(tokens["input_ids"][0])):
         doc = en_nlp(w)  # determine if it is an entity
         if  len(doc.entities) == 0:
                mask_pos.append(i)
-        print(mask_pos)
+print(tokenizer.convert_tokens_to_ids("I"))
+print(tokenizer.convert_tokens_to_ids("i"))
 
 
 

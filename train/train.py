@@ -31,15 +31,15 @@ cache_dir = 'GloVe6B5429'
 class WordEmbeddingDataset(tud.Dataset):
     def __init__(self,):
         super().__init__()
-        self._glove = vocab.GloVe(name='6B', dim=300, cache=cache_dir)
-        self._tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        self._glove = vocab.GloVe(name='840B', dim=300, cache=cache_dir)
+        self._tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
 
     def __len__(self):
         return len(self._glove)
 
     def __getitem__(self, idx):
         Ew = self._glove.vectors[idx]
-        word = self._glove.itos[idx].lower()
+        word = self._glove.itos[idx]
         Tw = torch.zeros(self._tokenizer.vocab_size,dtype=torch.float)
         for tok_id in self._tokenizer.convert_tokens_to_ids(
                 self._tokenizer.tokenize(word)):
@@ -58,8 +58,8 @@ def train(epoch:int,batch:int,lr:float):
     scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=1000, gamma=0.5)
     linear.weight.data.zero_()
     for word, id in dt._tokenizer.vocab.items():
-        if word.lower() in dt._glove.itos:
-            linear.weight.data[:, id] = dt._glove.vectors[dt._glove.stoi[word.lower()]]
+        if word in dt._glove.itos:
+            linear.weight.data[:, id] = dt._glove.vectors[dt._glove.stoi[word]]
     loss_func = torch.nn.L1Loss(reduction='mean')
     loss_his = []
 
