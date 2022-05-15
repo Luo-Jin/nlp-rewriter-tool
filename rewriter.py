@@ -26,6 +26,7 @@ config.read(file_path)
 screen = None
 txt_box = None
 revised_box = None
+logo_box = None
 # initialize sentences list
 replaced_sents = []
 # model parameters
@@ -34,12 +35,12 @@ k = 0
 batch = 1
 
 class Textframe(object):
-    def __init__(self,stdscr,line,col,y,x,id):
+    def __init__(self,stdscr,line,col,txtline,y,x,id):
         self.frame_line = line     # 20 by default
         self.frame_col = col       # 100 by default
         self.frame_y = y           # frame coordinates y, 2 by default
         self.frame_x = x           # frame coordinates x, 5 by default
-        self.text_line = 90        # line size
+        self.text_line = txtline   # line size
         self.row_num = 0           # max row number
         self.select_idx = 0        # selected sentence position
         self.current_sent_idx = 0  # current sentence index
@@ -63,6 +64,9 @@ class Textframe(object):
         self.alt_s = None          # process alt+s,
         self.u =None               # process 'u' strike
         self.select_sent_y = 0
+        self.selected_color = 1    # color of selected sentence
+        self.changed_color  = 2   # color of unchanged sentence
+        self.unchanged_color = 0   # color of changed sentence
 
     def getWin(self):
         return self.__win
@@ -140,7 +144,8 @@ class Textframe(object):
                 l.append(total_size % self.text_line)
                 str_len = len(para[i][0])
                 st = 0
-                para[i][1] =(1 if para[i][6] == self.select_idx else (0 if para[i][7] == 0 else 2))
+                para[i][1] =(self.selected_color if para[i][6] == self.select_idx else
+                             (self.unchanged_color if para[i][7] == 0 else self.changed_color))
                 self.current_sent_idx = (i if para[i][6] == self.select_idx else self.current_sent_idx)
                 self.current_para_idx = (self.__paragraphs.index(para) if para[i][6] == self.select_idx else self.current_para_idx)
 
@@ -186,10 +191,10 @@ class Textframe(object):
         self.__win.refresh()
 
     def updateStatus(self):
-        y   = txt_box.frame_y -1
-        y1  = revised_box.frame_y - 1
-        x   = txt_box.frame_x
-        x1  = revised_box.frame_x
+        y = txt_box.frame_y - 1
+        y1 = revised_box.frame_y - 1
+        x = txt_box.frame_x
+        x1 = revised_box.frame_x
 
         if self.__id == 0:
             color1 = 3
@@ -203,15 +208,16 @@ class Textframe(object):
             border_color1 = curses.A_NORMAL
             border_color2 = curses.A_STANDOUT
         screen.clear()
-        screen.addstr(y , x,
-                           "{}-{} of total {} lines. sentence {} in paragraph {} is selected"
-                           .format(txt_box.firstrow_idx, np.min([txt_box.firstrow_idx + txt_box.window_size, txt_box.row_num])
-                                   , txt_box.row_num, txt_box.current_sent_idx, txt_box.current_para_idx)
-                           , curses.color_pair(color1))
+        screen.addstr(y, x,
+                      "{}-{} of total {} lines. sentence {} in paragraph {} is selected"
+                      .format(txt_box.firstrow_idx,
+                              np.min([txt_box.firstrow_idx + txt_box.window_size, txt_box.row_num])
+                              , txt_box.row_num, txt_box.current_sent_idx, txt_box.current_para_idx)
+                      , curses.color_pair(color1))
 
-        screen.addstr(y1,x1
-                           , "{} new sentence(s) will be generated here with σ={} and k={}".format(batch,σ, k)
-                           , curses.color_pair(color2))
+        screen.addstr(y1, x1
+                      , "{} new sentence(s) will be generated here with σ={} and k={}".format(batch, σ, k)
+                      , curses.color_pair(color2))
 
         screen.refresh()
         txt_box.getWin().attron(border_color1)
@@ -222,6 +228,9 @@ class Textframe(object):
         revised_box.getWin().box()
         revised_box.getWin().attroff(border_color2)
         revised_box.getWin().refresh()
+        logo_box.getWin().redrawwin()
+        logo_box.getWin().refresh()
+
 
 def readTXT(file):
     f = open(file, mode='r')
@@ -278,7 +287,7 @@ def undoChange():
             break
 
 def main(stdscr):
-    global config,screen,txt_box,revised_box,σ,k,batch
+    global config,screen,txt_box,revised_box,logo_box,σ,k,batch
     # read config file
     σ = config.getfloat("MODEL_PARAM",'σ')
     k = config.getfloat("MODEL_PARAM",'k')
@@ -287,33 +296,46 @@ def main(stdscr):
     screen = stdscr
     # curses initialization
     curses.use_default_colors()
-    curses.init_pair(1, curses.COLOR_CYAN, curses.COLOR_RED)
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_RED)
     curses.init_pair(2, curses.COLOR_CYAN, -1)
     curses.init_pair(3, curses.COLOR_RED, -1)
     curses.init_pair(4, curses.COLOR_BLUE, -1)
     curses.curs_set(0)
     # create text frame to display original sentences
-    txt_box = Textframe(stdscr,config.getint('GUI','txtbox_line')
-                        ,config.getint('GUI','txtbox_col')
-                        ,config.getint('GUI','txtbox_y')
-                        ,config.getint('GUI','txtbox_x')
-                        ,config.getint('GUI','txtbox_id'))
+    txt_box = Textframe(stdscr,config.getint('MAIN_BOX','txtbox_line')
+                        ,config.getint('MAIN_BOX','txtbox_col')
+                        ,config.getint('MAIN_BOX','txtbox_txtline')
+                        ,config.getint('MAIN_BOX','txtbox_y')
+                        ,config.getint('MAIN_BOX','txtbox_x')
+                        ,config.getint('MAIN_BOX','txtbox_id'))
     txt_box.enterKey = refineSentence
     txt_box.alt_s    = saveChange
     txt_box.u        = undoChange
     # create text frame to display revised sentences width=200,height=10,y=26,x=5
-    revised_box = Textframe(stdscr,config.getint('GUI','revisedbox_line')
-                        ,config.getint('GUI','revisedbox_col')
-                        ,config.getint('GUI','revisedbox_y')
-                        ,config.getint('GUI','revisedbox_x')
-                        ,config.getint('GUI','revisedbox_id'))
+    revised_box = Textframe(stdscr,config.getint('MAIN_BOX','revisedbox_line')
+                        ,config.getint('MAIN_BOX','revisedbox_col')
+                        ,config.getint('MAIN_BOX','revisedbox_txtline')
+                        ,config.getint('MAIN_BOX','revisedbox_y')
+                        ,config.getint('MAIN_BOX','revisedbox_x')
+                        ,config.getint('MAIN_BOX','revisedbox_id'))
     revised_box.indent = 0
     revised_box.enterKey = refineSentence
     revised_box.alt_s = conformChange
-    txt_box.setText(readTXT(config.get('TEXT','input_file')))
+    txt_box.setText(readTXT(config.get('FILE','input_file')))
     txt_box.calcPosition(0)
+
+    # create logo window
+    logo_box = Textframe(stdscr,config.getint('LOGO_BOX','logobox_line')
+                        ,config.getint('LOGO_BOX','logobox_col')
+                        ,config.getint('LOGO_BOX','logobox_txtline')
+                        ,config.getint('LOGO_BOX','logobox_y')
+                        ,config.getint('LOGO_BOX','logobox_x')
+                        ,config.getint('LOGO_BOX','logobox_id'))
+    logo_box.setText(readTXT(config.get('FILE', 'logo_file')))
+    logo_box.selected_color = 0
+    logo_box.calcPosition(0)
+    logo_box.printText()
     txt_box.printText()
-    # revised_box.register(fun2)
     txt_box.selectSentence()
 
 if __name__=='__main__':
