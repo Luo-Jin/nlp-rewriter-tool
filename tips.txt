@@ -1,0 +1,21 @@
+The content window displays sentences from a draft TXT document, in which you can choose a sentence to rephrase. Use the following keys in the content window.
+______________________________________________________________
+|      Keys         |          Operations                    |
+|___________________|________________________________________|
+|  "Page Left"      | move to the next sentence              |
+|  "Page Right"     | move to the previous sentence          |
+|  "Enter"          | rephrase current sentence              |
+|  "Alt + S"        | save contents to a TXT file            |
+|  "U"              | undo the changes in current sentence   |
+|  "Q"              | exit the program                       |
+|___________________|________________________________________|
+
+
+The output window generates a rephrased sentence based on the similarity rate σ and smooth rate k. Use the following keys in the output window.
+______________________________________________________________
+|      Keys         |          Operations                    |
+|___________________|________________________________________|
+|  "Enter"          | generate a new sentence                |
+|  "Alt + S"        | replace sentence in the content window |
+|  "Q"              | cancel                                 |
+|___________________|________________________________________|

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 ###############################################
 #   File    : generator.py
 #   Author  : Jin luo
@@ -31,9 +32,10 @@ import getopt
 import random
 import torch
 import copy
+from configparser import ConfigParser
+import os
 import curses
 import spacy
-import rewriter as rw
 import stanza
 
 
@@ -41,18 +43,22 @@ import stanza
 screen = curses.initscr()
 t = screen.getmaxyx()
 progress_bar = curses.newwin(1,40,0,0)
-progress_bar.mvwin(int(t[0]/2),int(t[1]/2))
+progress_bar.mvwin(int(t[0]/2)-1,int(t[1]/2)-20)
 progress_bar.addstr(0,0,"Loading embeddings...")
 progress_bar.refresh()
 # load the embeddings
-tokenizer = BertTokenizer.from_pretrained(rw.config.get("PRE_TRAINED","bert_vocal"))
-model = BertForMaskedLM.from_pretrained(rw.config.get("PRE_TRAINED","bert_model"))
-word_piece_embeddings = torch.load(rw.config.get("PRE_TRAINED","embeddings"))
+file_path = os.path.join(os.path.abspath("."), "rewriter.ini")
+config = ConfigParser()
+config.read(file_path)
+tokenizer = BertTokenizer.from_pretrained(config.get("PRE_TRAINED","bert_vocal"))
+model = BertForMaskedLM.from_pretrained(config.get("PRE_TRAINED","bert_model"))
+word_piece_embeddings = torch.from_numpy(torch.load(config.get("PRE_TRAINED","embeddings"))).t()
 #stanza.download('en',model_dir='stanza')
-en_nlp = stanza.Pipeline('en',dir=rw.config.get("PRE_TRAINED","stanza_model"),processors='tokenize,ner')
+en_nlp = stanza.Pipeline('en',dir=config.get("PRE_TRAINED","stanza_model"),processors='tokenize,ner')
 nlp = spacy.load("en_core_web_sm")
 progress_bar.clear()
-progress_bar.mvwin(23,35)
+progress_bar.mvwin(config.getint('OUTPUT_BOX','y') + int(config.getint('OUTPUT_BOX','row')/2)-1
+                   ,config.getint('OUTPUT_BOX','x') + int(config.getint('OUTPUT_BOX','col')/2)-4)
 progress_counter = 0
 
 def main():
@@ -60,10 +66,11 @@ def main():
     arg_sim = None
     arg_enf = None
     arg_txt = None
-    arg_help = "{0} -t <text> -s <similarity> -e <enforcement>".format(sys.argv[0])
+    arg_batch = 0
+    arg_help = "{0} -t <text> -s <similarity> -e <enforcement> -b <batch>".format(sys.argv[0])
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "t:s:e:", ["help", "text=","similar=", "enforce="])
+        opts, args = getopt.getopt(sys.argv[1:], "ht:s:e:b:", ["help", "text=","similar=", "enforce=","batch="])
     except:
         print(arg_help)
         sys.exit(2)
@@ -78,8 +85,11 @@ def main():
             arg_sim = arg
         elif opt in ("-e", "--enforce"):
             arg_enf = arg
+        elif opt in ("-b", "--batch"):
+            arg_batch = arg
     σ = 0.975 if arg_sim is None else float(arg_sim)
     k = 0.1 if arg_enf is None else float(arg_enf)
+    batch = 1 if arg_batch is None else int(arg_batch)
 
     # read text from specific txt file
     texts = readTXT(arg_txt)
@@ -87,7 +97,7 @@ def main():
     clearScreen()
     print("\033[1;33mThe original sentence is :\033[0m")
     print("\033[7m\n{}\n\033[0m".format(texts))
-    tokens = getSentence(texts, σ, k)
+    tokens = getSentence(texts, σ, k,batch)
     print("\033[1;33mThe sentence is revised with smooth parameter k={} "
           "and similarity rate σ={} :\033[0m".format(k,σ))
     for i in torch.arange(len(tokens["input_ids"])):
@@ -184,7 +194,7 @@ def getSentence(txt,σ=0.975,k=0.1,batch=1):
     # iteratively replace the mask words
     i = 1
     tokens = copy.deepcopy(org_tokens)
-    progress_bar.erase()
+    #progress_bar.erase()
     while len(mask_pos) > 0 and i <= len(tokens["input_ids"][0]):
         i = i+1
         progress_counter = progress_counter + 1

@@ -1,0 +1,12 @@
+     _______
+    /_  __(_)__  ___
+     / / / / _ \(_-<
+    /_/ /_/ .__/___/
+         /_/
+
+   This window displays a rephrased sentence,
+   which is similar to the original one.
+
+   "Enter"      key   : generate a new sentence.
+   "Alt + s"    key   : replace original sentence.
+   "q"          key   : cancel.

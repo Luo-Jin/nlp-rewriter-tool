@@ -1,0 +1,25 @@
+Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.4.0.json:   0%|          | 0.00/26.0k [00:00<?, ?B/s]Downloading https://raw.githubusercontent.com/stanfordnlp/stanza-resources/main/resources_1.4.0.json: 154kB [00:00, 11.4MB/s]                    
+2022-05-15 23:32:25 INFO: Loading these models for language: en (English):
+=========================
+| Processor | Package   |
+-------------------------
+| tokenize  | combined  |
+| ner       | ontonotes |
+=========================
+
+2022-05-15 23:32:25 INFO: Use device: cpu
+2022-05-15 23:32:25 INFO: Loading: tokenize
+2022-05-15 23:32:25 INFO: Loading: ner
+2022-05-15 23:32:26 INFO: Done loading processors!
+Traceback (most recent call last):
+  File "/Users/jinluo/PycharmProjects/rewriting-tool/rewriter.py", line 360, in <module>
+    wrapper(main)
+  File "/Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/curses/__init__.py", line 94, in wrapper
+    return func(stdscr, *args, **kwds)
+  File "/Users/jinluo/PycharmProjects/rewriting-tool/rewriter.py", line 340, in main
+    logo_box.printText()
+  File "/Users/jinluo/PycharmProjects/rewriting-tool/rewriter.py", line 191, in printText
+    self.updateStatus()
+  File "/Users/jinluo/PycharmProjects/rewriting-tool/rewriter.py", line 234, in updateStatus
+    tip_box.getWin().redrawwin()
+AttributeError: 'NoneType' object has no attribute 'getWin'
