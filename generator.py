@@ -47,7 +47,7 @@ progress_bar.mvwin(int(t[0]/2)-1,int(t[1]/2)-20)
 progress_bar.addstr(0,0,"Loading embeddings...")
 progress_bar.refresh()
 # load the embeddings
-file_path = os.path.join(os.path.abspath("."), "rewriter.ini")
+file_path = os.path.join(os.path.abspath("."), "refrazer.ini")
 config = ConfigParser()
 config.read(file_path)
 tokenizer = BertTokenizer.from_pretrained(config.get("PRE_TRAINED","bert_vocal"))

@@ -20,7 +20,7 @@ import os
 import generator as gen
 
 # config object
-file_path = os.path.join(os.path.abspath("."), "rewriter.ini")
+file_path = os.path.join(os.path.abspath("."), "refrazer.ini")
 config = ConfigParser()
 config.read(file_path)
 # text frame objects
