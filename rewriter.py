@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 ###############################################
 #   File    : rewriter.py
 #   Author  : Jin luo
-#   Date    : 2022-04-29
+#   Date    : 2022-05-17
 #   Input   : None
 #   Output  : None
 ###############################################
@@ -14,26 +13,28 @@ import numpy as np
 import torch
 import stanza
 import copy
-import re
+import os,io
 import random
+from configparser import ConfigParser
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
 from tkinter import *
 from tkinter import ttk
 
-
-
+config_file = os.path.join(os.path.abspath("."),"rewriter.ini")
+config = ConfigParser()
+with io.open(config_file, 'r', encoding='utf_8_sig') as fp:
+    config.readfp(fp)
 # load embeddings
-tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-model = BertForMaskedLM.from_pretrained('bert-base-cased')
-word_piece_embeddings = torch.from_numpy(torch.load('embeddings/cased_em_e1000_b5000_l0.5.pt')).t()
-#word_piece_embeddings = torch.load('embeddings/nosig_sml1_e1000_b5000_l0.5.pt').t()
+tokenizer = BertTokenizer.from_pretrained(config.get('EMBEDDINGS','bert'))
+model = BertForMaskedLM.from_pretrained(config.get('EMBEDDINGS','bert'))
+word_piece_embeddings = torch.from_numpy(torch.load(config.get('EMBEDDINGS','word_piece'))).t()
 en_nlp = stanza.Pipeline('en',processors='tokenize,ner')
 
 # prepare windows
 win = Tk()
 win.title("Sentence Rewriter")
-win.geometry('700x400')
+win.geometry('566x350')
 
 lbr0 = Label(text="Number of alternative:")
 lbr1 = Label(text="Sentence to be rewritten：")
@@ -44,30 +45,30 @@ lbr5 = Label(text="Number of mask:")
 
 cbox_num = ttk.Combobox(win,width=2)
 cbox_num['value'] = (1,2,3)
-cbox_num.current(0)
-ent_similarity = Entry(win,width=3,bd=1,relief=SUNKEN)
-ent_smooth = Entry(win,width=3,bd=1,relief=SUNKEN)
-ent_mask = Entry(win,width=3,bd=1,relief=SUNKEN)
-txt_edit = Text(win, width = 85, height = 5,bd=1,relief=SUNKEN)
-txt_rephrase = Text(win, width = 85, height = 15,bd=1,relief=SUNKEN)
-btn_rephrase = Button(win, text="Rephrase",bg="#7CCD7C",relief=RAISED, width=10)
+cbox_num.current(2)
+ent_similarity = Entry(win,width=5,bd=1,relief=SUNKEN)
+ent_smooth = Entry(win,width=5,bd=1,relief=SUNKEN)
+ent_mask = Entry(win,width=5,bd=1,relief=SUNKEN)
+txt_edit = Text(win, width = 70, height = 5,bd=1,relief=SUNKEN)
+txt_rephrase = Text(win, width = 70, height = 10,bd=1,relief=SUNKEN)
+btn_rephrase = Button(win, text="Rephrase",relief=RAISED, width=10)
 
 lbr0.grid(row=0,column=0,sticky="w")
-cbox_num.grid(row=0,column=0,sticky="e")
-lbr3.grid(row=0,column=1,sticky="w")
-ent_similarity.grid(row=0,column=1,sticky="e")
-lbr4.grid(row=0,column=2,sticky="w")
-ent_smooth.grid(row=0,column=2,sticky="e")
-lbr5.grid(row=0,column=3,sticky="w")
-ent_mask.grid(row=0,column=3,sticky="e")
+cbox_num.grid(row=0,column=1,sticky="w")
+lbr3.grid(row=0,column=2,sticky="e")
+ent_similarity.grid(row=0,column=3,sticky="w")
+lbr4.grid(row=0,column=4,sticky="e")
+ent_smooth.grid(row=0,column=5,sticky="w")
+lbr5.grid(row=0,column=6,sticky="e")
+ent_mask.grid(row=0,column=7,sticky="w")
 
-lbr1.grid(row=1,column=0,columnspan=4,sticky="w")
-txt_edit.grid(row=2,column=0,columnspan=4)
-lbr2.grid(row=3,column=0,sticky="w")
-txt_rephrase.grid(row=4,column=0,columnspan=4)
-btn_rephrase.grid(row=5,column=0,sticky="w")
-ent_similarity.insert(0,0.97)
-ent_smooth.insert(0,5)
+lbr1.grid(row=1,column=0,columnspan=8,sticky="w")
+txt_edit.grid(row=2,column=0,columnspan=8)
+lbr2.grid(row=3,column=0,columnspan=8,sticky="w")
+txt_rephrase.grid(row=4,column=0,columnspan=8)
+btn_rephrase.grid(row=5,column=0,columnspan=8)
+ent_similarity.insert(0,config.getfloat('PARAMS','σ'))
+ent_smooth.insert(0,config.getint('PARAMS','k'))
 
 
 def button_click(event):
