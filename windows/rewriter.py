@@ -9,22 +9,33 @@
 a GUI for the rewriter tool
 '''
 
+
+import copy
+import re
+import os,io
+import random
+from tkinter import Entry
+from tkinter import Label
+from tkinter import Tk
+from tkinter import SUNKEN
+from tkinter import RAISED
+from tkinter import END
+from tkinter import Text
+from tkinter import Button
+from tkinter import ttk
+from configparser import ConfigParser
 import numpy as np
 import torch
 import stanza
-import copy
-import os,io
-import random
-from configparser import ConfigParser
 from transformers import BertTokenizer
 from transformers import BertForMaskedLM
-from tkinter import *
-from tkinter import ttk
 
 config_file = os.path.join(os.path.abspath("."),"rewriter.ini")
 config = ConfigParser()
 with io.open(config_file, 'r', encoding='utf_8_sig') as fp:
     config.readfp(fp)
+
+
 # load embeddings
 tokenizer = BertTokenizer.from_pretrained(config.get('EMBEDDINGS','bert'))
 model = BertForMaskedLM.from_pretrained(config.get('EMBEDDINGS','bert'))
