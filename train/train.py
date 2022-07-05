@@ -87,7 +87,7 @@ def train(epoch:int,batch:int,lr:float,model):
             interval = time2 - time1
             time1 = time2
             torch.save(loss_his, 'loss.pt')
-            torch.save(linear.weight.data.cpu().numpy(), '{}_{}_{}_{}_word_piece_em.pt'.format(model,epoch,batch,lr))
+            torch.save(linear.weight.data.cpu().numpy(), '{}_e{}_b{}_l{}_word_piece_em.pt'.format(model,epoch,batch,lr))
             print('epoch:{},runtime:{},loss:{}'
                   .format(epoch
                           ,interval
