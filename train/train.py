@@ -97,7 +97,7 @@ def main():
     arg_epoch = None
     arg_batch = None
     arg_lr = None
-    arg_model = 'bert-base-uncased'
+    arg_model = 'uncased'
     arg_help = "{0} -e <epoch> -b <batch> -l <learning rate> -m <bert model>".format(sys.argv[0])
 
     try:
