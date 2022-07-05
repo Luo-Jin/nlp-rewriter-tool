@@ -29,10 +29,10 @@ from transformers import BertTokenizer
 
 cache_dir = 'GloVe6B5429'
 class WordEmbeddingDataset(tud.Dataset):
-    def __init__(self,):
+    def __init__(self,model):
         super().__init__()
         self._glove = vocab.GloVe(name='840B', dim=300, cache=cache_dir)
-        self._tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+        self._tokenizer = BertTokenizer.from_pretrained('bert-base-{}'.format(model))
 
     def __len__(self):
         return len(self._glove)
@@ -47,9 +47,9 @@ class WordEmbeddingDataset(tud.Dataset):
         return Tw, Ew
 
 
-def train(epoch:int,batch:int,lr:float):
+def train(epoch:int,batch:int,lr:float,model):
     # prepare dataloader
-    dt = WordEmbeddingDataset()
+    dt = WordEmbeddingDataset(model)
     dataloader = tud.DataLoader(dt, batch_size=batch, shuffle=True, num_workers=48,drop_last=True)
 
     # define the nn model and optimizer and loss function
@@ -87,7 +87,7 @@ def train(epoch:int,batch:int,lr:float):
             interval = time2 - time1
             time1 = time2
             torch.save(loss_his, 'loss.pt')
-            torch.save(linear.weight.data.cpu().numpy(), 'weight.pt')
+            torch.save(linear.weight.data.cpu().numpy(), '{}_{}_{}_{}_word_piece_em.pt'.format(model,epoch,batch,lr))
             print('epoch:{},runtime:{},loss:{}'
                   .format(epoch
                           ,interval
@@ -97,10 +97,11 @@ def main():
     arg_epoch = None
     arg_batch = None
     arg_lr = None
-    arg_help = "{0} -e <epoch> -b <batch> -l <learning rate>".format(sys.argv[0])
+    arg_model = 'bert-base-uncased'
+    arg_help = "{0} -e <epoch> -b <batch> -l <learning rate> -m <bert model>".format(sys.argv[0])
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "h:e:b:l:", ["help", "epoch=","batch=", "lr="])
+        opts, args = getopt.getopt(sys.argv[1:], "h:e:b:l:m:", ["help", "epoch=","batch=", "lr=","model="])
     except:
         print(arg_help)
         sys.exit(2)
@@ -115,8 +116,10 @@ def main():
             arg_batch = int(arg)
         elif opt in ("-l", "--lr"):
             arg_lr = float(arg)
+        elif opt in ("-m", "--model"):
+            arg_model = arg
 
-    train(epoch=arg_epoch,batch=arg_batch,lr=arg_lr)
+    train(epoch=arg_epoch,batch=arg_batch,lr=arg_lr,model=arg_model)
 
 
 if __name__ == "__main__":
